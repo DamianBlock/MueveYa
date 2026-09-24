@@ -1,0 +1,10 @@
+<api type="debug" assembly-name="AppFletesMueve" mvid="b86417f584e64791954d3fd892780706">
+  <java-to-managed>
+    <entry java-name="crc640f5c3a2d5c67fd54/MainActivity" managed-name="AppFletesMueve.MainActivity, AppFletesMueve" managed-type-token-id="33554441" />
+    <entry java-name="crc640f5c3a2d5c67fd54/MainApplication" managed-name="AppFletesMueve.MainApplication, AppFletesMueve" managed-type-token-id="33554442" />
+  </java-to-managed>
+  <managed-to-java>
+    <entry java-name="crc640f5c3a2d5c67fd54/MainActivity" managed-name="AppFletesMueve.MainActivity, AppFletesMueve" managed-type-token-id="33554441" />
+    <entry java-name="crc640f5c3a2d5c67fd54/MainApplication" managed-name="AppFletesMueve.MainApplication, AppFletesMueve" managed-type-token-id="33554442" />
+  </managed-to-java>
+</api>

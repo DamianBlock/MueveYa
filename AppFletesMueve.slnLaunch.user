@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Nuevo perfil",
+    "Projects": [
+      {
+        "Path": "AppFletesMueve\\AppFletesMueve.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "AppFletesMueve.Api\\AppFletesMueve.Api.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

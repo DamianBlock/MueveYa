@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="AppFletesMueve.Views.RegistroPage"
+    Title="Crear cuenta"
+    BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+    Padding="25,20,25,15"
+    Spacing="12">
+
+            <Label
+                Text="Crear cuenta"
+                FontSize="28"
+                FontAttributes="Bold"
+                TextColor="#E65100"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Completá tus datos"
+                FontSize="15"
+                TextColor="Gray"
+                HorizontalOptions="Center" />
+
+            <Entry
+                x:Name="txtNombre"
+                Placeholder="Nombre"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray"/>
+
+            <Entry
+                x:Name="txtApellido"
+                Placeholder="Apellido"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray"/>
+
+            <Entry
+                x:Name="txtDni"
+                Placeholder="DNI"
+                Keyboard="Numeric"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray" />
+
+            <Entry
+                x:Name="txtTelefono"
+                Placeholder="Teléfono"
+                Keyboard="Telephone"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray" />
+
+            <Entry
+                x:Name="txtEmail"
+                Placeholder="Correo electrónico"
+                Keyboard="Email"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray"/>
+
+            <Entry
+                x:Name="txtPassword"
+                Placeholder="Contraseña"
+                IsPassword="True"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray"/>
+
+            <Label
+                Text="¿Qué tipo de usuario sos?"
+                FontAttributes="Bold"
+                TextColor="Black"
+                Margin="0,10,0,0" />
+
+            <Picker
+                x:Name="pickerTipoUsuario"
+                Title="Seleccionar tipo de usuario"
+                BackgroundColor="White">
+
+                <Picker.Items>
+                    <x:String>CLIENTE</x:String>
+                    <x:String>CONDUCTOR</x:String>
+                </Picker.Items>
+
+            </Picker>
+
+            <Button
+                Text="CREAR CUENTA"
+                BackgroundColor="#E65100"
+                TextColor="White"
+                FontAttributes="Bold"
+                HeightRequest="55"
+                Margin="0,10,0,10"
+                CornerRadius="12"
+                Clicked="CrearCuenta_Clicked" />    
+
+            <Label
+                x:Name="lblMensaje"
+                TextColor="#D32F2F"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center" />
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>

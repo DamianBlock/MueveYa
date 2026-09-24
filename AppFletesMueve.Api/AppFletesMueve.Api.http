@@ -1,0 +1,6 @@
+@AppFletesMueve.Api_HostAddress = http://localhost:5051
+
+GET {{AppFletesMueve.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

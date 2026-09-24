@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AppFletesMueve.MainPage"
+             BackgroundColor="#F5F5F5"
+             NavigationPage.HasNavigationBar="False">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+        BackgroundColor="#F5F5F5"
+        Spacing="0">
+
+            <!-- BARRA SUPERIOR -->
+
+            <Grid BackgroundColor="#E65100"
+              Padding="15,10">
+
+                <Image
+                Source="logo_mueve.png"
+                HeightRequest="40"
+                HorizontalOptions="Start" />
+
+                <Label
+Grid.Column="1"
+x:Name="lblBienvenida"
+FontSize="18"
+FontAttributes="Bold"
+TextColor="White"
+HorizontalOptions="End"
+VerticalOptions="Center"/>
+
+            </Grid>
+
+            <!-- MAPA -->
+
+            <Grid HeightRequest="180"
+              BackgroundColor="#E0E0E0">
+
+                <Image
+                Source="mock_map.png"
+                Aspect="AspectFill" />
+
+                <Button
+                Text="Ver Mapa"
+                BackgroundColor="#E65100"
+                TextColor="White"
+                FontAttributes="Bold"
+                WidthRequest="160"
+                HeightRequest="50"
+                CornerRadius="15"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Clicked="VerMapa_Clicked"/>
+
+            </Grid>
+
+            <!-- MENÚ -->
+
+            <Grid BackgroundColor="White"
+              Padding="15"
+              ColumnDefinitions="*,*,*,*">
+
+                <VerticalStackLayout
+    Grid.Column="0">
+                    <Image Source="home_orange_icon.png"
+                       HeightRequest="24"/>
+                    <Label Text="Inicio"
+                       FontSize="11"
+                           TextColor="Black"
+                       HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="1">
+                    <Image Source="trips_icon.png"
+                       HeightRequest="24"/>
+                    <Label Text="Viajes"
+                       FontSize="11"
+                           TextColor="Black"
+                       HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="2">
+                    <Image Source="promos_icon.png"
+                       HeightRequest="24"/>
+                    <Label Text="Promos"
+                       FontSize="11"
+                           TextColor="Black"
+                       HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="3">
+
+                    <VerticalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer
+                        Tapped="CerrarSesion_Tapped"/>
+                    </VerticalStackLayout.GestureRecognizers>
+
+                    <Image Source="logout_icon.png"
+                       HeightRequest="24"/>
+
+                    <Label Text="Salir"
+                       FontSize="11"
+                       TextColor="Black"
+                       HorizontalTextAlignment="Center"/>
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+            <!-- CONTENIDO -->
+
+            <VerticalStackLayout
+            Padding="20"
+            Spacing="15">
+
+                <Border
+            StrokeShape="RoundRectangle 10"
+            StrokeThickness="1"
+            Stroke="#E0E0E0"
+            Padding="15"
+            BackgroundColor="#FAFAFA">
+
+                    <VerticalStackLayout Spacing="8">
+
+                        <Label
+        Text="Origen"
+        TextColor="Gray"
+        FontSize="12"/>
+
+                        <Label
+        Text="Av. Reforma 222"
+        FontAttributes="Bold"
+        TextColor="Black"/>
+
+                        <Label
+        Text="Destino"
+        TextColor="Gray"
+        FontSize="12"/>
+
+                        <Label
+        Text="Roma Norte"
+        FontAttributes="Bold"
+        TextColor="Black"/>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label
+    Text="Selecciona tu Vehículo"
+    FontSize="16"
+    FontAttributes="Bold"/>
+
+                <CollectionView
+    ItemsSource="{Binding Vehiculos}"
+    HeightRequest="180"
+    SelectionMode="None">
+
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout
+            Orientation="Horizontal"
+            ItemSpacing="12"/>
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.ItemTemplate>
+
+                        <DataTemplate>
+
+                            <Border
+                Stroke="#E65100"
+                StrokeThickness="2"
+                StrokeShape="RoundRectangle 10"
+                WidthRequest="140"
+                Padding="10">
+
+                                <VerticalStackLayout>
+
+                                    <Image
+                        Source="{Binding Imagen}"
+                        HeightRequest="60"/>
+
+                                    <Label
+                        Text="{Binding Nombre}"
+                        FontAttributes="Bold"
+                        TextColor="Black"
+                        HorizontalTextAlignment="Center"/>
+
+                                    <Label
+                        Text="{Binding Precio, StringFormat='${0} MXN'}"
+                        TextColor="#E65100"
+                        HorizontalTextAlignment="Center"/>
+
+                                </VerticalStackLayout>
+
+                            </Border>
+
+                        </DataTemplate>
+
+                    </CollectionView.ItemTemplate>
+
+                </CollectionView>
+
+                <Button
+    Text="Confirmar Flete - $350 MXN"
+    BackgroundColor="#E65100"
+    TextColor="White"/>
+
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>

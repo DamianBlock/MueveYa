@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="AppFletesMueve.Views.LoginPage"
+    BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="30"
+            Spacing="15"
+            VerticalOptions="Center">
+
+            <!-- Logo -->
+
+            <Image
+                Source="logo_mueve.png"
+                HeightRequest="130"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Bienvenido"
+                FontSize="30"
+                FontAttributes="Bold"
+                TextColor="#E65100"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Inicia sesión para continuar"
+                FontSize="15"
+                TextColor="Gray"
+                HorizontalOptions="Center" />
+
+            <!-- Correo -->
+
+            <Entry
+                x:Name="txtEmail"
+                Placeholder="Correo electrónico"
+                Keyboard="Email"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray" />
+
+            <!-- Contraseña -->
+
+            <Entry
+                x:Name="txtPassword"
+                Placeholder="Contraseña"
+                IsPassword="True"
+                BackgroundColor="White"
+                TextColor="Black"
+                PlaceholderColor="Gray" />
+
+            <!-- Botón ingreso -->
+
+            <Button
+                Text="INGRESAR"
+                BackgroundColor="#E65100"
+                TextColor="White"
+                FontAttributes="Bold"
+                HeightRequest="55"
+                CornerRadius="12"
+                Clicked="Ingresar_Clicked" />
+
+            <!-- Botón registro -->
+
+            <Button
+                Text="CREAR CUENTA"
+                BackgroundColor="White"
+                BorderColor="#E65100"
+                BorderWidth="2"
+                TextColor="#E65100"
+                FontAttributes="Bold"
+                HeightRequest="55"
+                CornerRadius="12"
+                Clicked="Registro_Clicked" />
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>

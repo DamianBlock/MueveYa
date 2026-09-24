@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="AppFletesMueve.Views.HomeConductor"
+    BackgroundColor="#F5F5F5"
+    NavigationPage.HasNavigationBar="False">
+
+    <ScrollView>
+
+        <VerticalStackLayout Spacing="15">
+
+            <!-- CABECERA -->
+
+            <Grid BackgroundColor="#E65100"
+                  Padding="15,10">
+
+                <Image
+                    Source="logo_mueve.png"
+                    HeightRequest="40"
+                    HorizontalOptions="Start"/>
+
+            </Grid>
+
+            <Frame
+    Margin="15,10"
+    CornerRadius="12"
+    BackgroundColor="White">
+
+                <Grid ColumnDefinitions="*,Auto">
+
+                    <!-- Saludo -->
+
+                    <VerticalStackLayout Grid.Column="0">
+
+                        <Label
+                x:Name="lblSaludo"
+                FontSize="24"
+                FontAttributes="Bold"
+                TextColor="Black"/>
+
+                        <Label
+                Text="Tenés viajes disponibles cerca tuyo"
+                FontSize="14"
+                TextColor="Gray"/>
+
+                    </VerticalStackLayout>
+
+                    <!-- Cerrar sesión -->
+
+                    <Label
+            Grid.Column="1"
+            Text="Cerrar sesión"
+            TextColor="#E65100"
+            FontAttributes="Bold"
+            VerticalOptions="Center">
+
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer
+                    Tapped="CerrarSesion_Tapped"/>
+                        </Label.GestureRecognizers>
+
+                    </Label>
+
+                </Grid>
+
+            </Frame>
+
+            <!-- MAPA CLIENTE -->
+
+            <Frame
+                Margin="15,0"
+                CornerRadius="12"
+                Padding="0">
+
+                <Grid HeightRequest="220">
+
+                    <Image
+                        Source="mock_map.png"
+                        Aspect="AspectFill"/>
+
+                    <Label
+                        Text="Ubicación del Cliente"
+                        BackgroundColor="#E65100"
+                        TextColor="White"
+                        Padding="10,5"
+                        HorizontalOptions="Start"
+                        VerticalOptions="Start"/>
+
+                </Grid>
+
+            </Frame>
+
+            <!-- VIAJE -->
+
+            <Frame
+                Margin="15,0"
+                CornerRadius="12"
+                BackgroundColor="White">
+
+                <VerticalStackLayout Spacing="10">
+
+                    <Label
+                        Text="Solicitud de Viaje"
+                        FontAttributes="Bold"
+                        FontSize="18"
+                        TextColor="#E65100"/>
+
+                    <Label
+                        Text="Cliente: Juan Pérez"
+                        TextColor="Black"/>
+
+                    <Label
+                        Text="Origen: Av. Reforma 222"
+                        TextColor="Black"/>
+
+                    <Label
+                        Text="Destino: Roma Norte"
+                        TextColor="Black"/>
+
+                    <Label
+                        Text="Vehículo: Camión 3.5 Ton"
+                        TextColor="Black"/>
+
+                    <Label
+                        Text="$690 MXN"
+                        FontSize="22"
+                        FontAttributes="Bold"
+                        TextColor="#E65100"/>
+
+                    <Button
+                        Text="ACEPTAR VIAJE"
+                        BackgroundColor="#E65100"
+                        TextColor="White"
+                        CornerRadius="12"
+                        Clicked="AceptarViaje_Clicked"/>
+
+                </VerticalStackLayout>
+
+            </Frame>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>
