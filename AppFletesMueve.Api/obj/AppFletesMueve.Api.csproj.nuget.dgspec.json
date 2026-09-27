@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\guile\\source\\repos\\AppFletesMueve\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj": {}
+    "D:\\Facultad Carrera Analista\\Seminario Integrador\\FletesYa\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\guile\\source\\repos\\AppFletesMueve\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj": {
+    "D:\\Facultad Carrera Analista\\Seminario Integrador\\FletesYa\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\guile\\source\\repos\\AppFletesMueve\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj",
+        "projectUniqueName": "D:\\Facultad Carrera Analista\\Seminario Integrador\\FletesYa\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj",
         "projectName": "AppFletesMueve.Api",
-        "projectPath": "C:\\Users\\guile\\source\\repos\\AppFletesMueve\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj",
-        "packagesPath": "C:\\Users\\guile\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\guile\\source\\repos\\AppFletesMueve\\AppFletesMueve.Api\\obj\\",
+        "projectPath": "D:\\Facultad Carrera Analista\\Seminario Integrador\\FletesYa\\AppFletesMueve.Api\\AppFletesMueve.Api.csproj",
+        "packagesPath": "C:\\Users\\damian\\.nuget\\packages\\",
+        "outputPath": "D:\\Facultad Carrera Analista\\Seminario Integrador\\FletesYa\\AppFletesMueve.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\guile\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\damian\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -53,6 +53,10 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.2.0, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[10.0.12, )"
@@ -63,7 +67,7 @@
               "target": "Package",
               "version": "[10.0.12, )"
             },
-            "Microsoft.EntityFrameworkCore.SqlServer": {
+            "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
               "version": "[10.0.12, )"
             }

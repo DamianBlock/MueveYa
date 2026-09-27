@@ -18,21 +18,22 @@ namespace AppFletesMueve.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Registrar([FromBody] Usuario usuario)
         {
-            _context.Usuarios.Add(usuario);
+            usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
 
+            _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
 
-            return Ok(usuario);
+            return Ok(UsuarioDto.FromEntity(usuario));
         }
 
         [HttpPost("login")]
         public IActionResult Login(LoginRequest request)
         {
-            var usuario = _context.Usuarios.FirstOrDefault(x =>
-                x.Email == request.Email &&
-                x.Password == request.Password);
+            var usuario = _context.Usuarios
+                .FirstOrDefault(x => x.Email == request.Email);
 
-            if (usuario == null)
+            if (usuario == null ||
+                !BCrypt.Net.BCrypt.Verify(request.Password, usuario.Password))
             {
                 return Unauthorized(new
                 {
@@ -40,7 +41,7 @@ namespace AppFletesMueve.Api.Controllers
                 });
             }
 
-            return Ok(usuario);
+            return Ok(UsuarioDto.FromEntity(usuario));
         }
     }
 }

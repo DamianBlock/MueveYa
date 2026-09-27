@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path="Export-ProjectStructure.ps1" />
+  </Folder>
   <Project Path="AppFletesMueve.Api/AppFletesMueve.Api.csproj" Id="0344e49a-deac-45c2-ab76-5a37b6940cb2" />
-  <Project Path="AppFletesMueve/AppFletesMueve.csproj" />
+  <Project Path="AppFletesMueve/AppFletesMueve.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
 </Solution>

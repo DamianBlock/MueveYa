@@ -7,7 +7,7 @@ namespace AppFletesMueve.Services
     {
         private readonly HttpClient _httpClient;
 
-        private const string ApiUrl = " https://narrow-drama-lloyd-however.trycloudflare.com/api/";
+        private const string ApiUrl = "https://personality-installing-qualified-journalist.trycloudflare.com/api/";
 
         public UsuarioService()
         {

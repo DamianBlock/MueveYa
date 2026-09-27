@@ -12,7 +12,7 @@
       <CodesignDisableTimestamp>true</CodesignDisableTimestamp>
       <CodesignKeychain></CodesignKeychain>
       <CodesignUseHardenedRuntime></CodesignUseHardenedRuntime>
-      <SourceProjectPath>C:\Users\guile\source\repos\AppFletesMueve\AppFletesMueve</SourceProjectPath>
+      <SourceProjectPath>D:\Facultad Carrera Analista\Seminario Integrador\FletesYa\AppFletesMueve</SourceProjectPath>
     </_CodesignBundle>
   </ItemGroup>
 </Project>

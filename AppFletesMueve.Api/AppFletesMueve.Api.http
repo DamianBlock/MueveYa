@@ -1,6 +1,24 @@
 @AppFletesMueve.Api_HostAddress = http://localhost:5051
 
-GET {{AppFletesMueve.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+POST {{AppFletesMueve.Api_HostAddress}}/api/Usuario
+Content-Type: application/json
+
+{
+  "nombre": "Juan",
+  "apellido": "Perez",
+  "dni": "12345678",
+  "telefono": "3811234567",
+  "email": "juan@test.com",
+  "password": "123456",
+  "tipoUsuario": "CLIENTE"
+}
 
 ###
+
+POST {{AppFletesMueve.Api_HostAddress}}/api/Usuario/login
+Content-Type: application/json
+
+{
+  "email": "juan@test.com",
+  "password": "123456"
+}

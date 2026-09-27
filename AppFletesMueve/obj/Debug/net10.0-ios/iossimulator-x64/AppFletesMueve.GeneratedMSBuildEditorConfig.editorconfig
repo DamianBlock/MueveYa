@@ -21,13 +21,13 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property.EntryPointFilePath = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = AppFletesMueve
-build_property.ProjectDir = C:\Users\guile\source\repos\AppFletesMueve\AppFletesMueve\
+build_property.ProjectDir = D:\Facultad Carrera Analista\Seminario Integrador\FletesYa\AppFletesMueve\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.EffectiveAnalysisLevelStyle = 10.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/App.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/App.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.App.xaml
 build_metadata.AdditionalFiles.TargetPath = App.xaml
@@ -37,7 +37,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/AppShell.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/AppShell.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.AppShell.xaml
 build_metadata.AdditionalFiles.TargetPath = AppShell.xaml
@@ -47,7 +47,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/MainPage.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/MainPage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.MainPage.xaml
 build_metadata.AdditionalFiles.TargetPath = MainPage.xaml
@@ -57,7 +57,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/Resources/Styles/Colors.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/Resources/Styles/Colors.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.Resources.Styles.Colors.xaml
 build_metadata.AdditionalFiles.TargetPath = Resources\Styles\Colors.xaml
@@ -67,7 +67,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/Resources/Styles/Styles.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/Resources/Styles/Styles.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.Resources.Styles.Styles.xaml
 build_metadata.AdditionalFiles.TargetPath = Resources\Styles\Styles.xaml
@@ -77,7 +77,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/Views/HomeConductor.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/Views/HomeConductor.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.Views.HomeConductor.xaml
 build_metadata.AdditionalFiles.TargetPath = Views\HomeConductor.xaml
@@ -87,7 +87,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/Views/LoginPage.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/Views/LoginPage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.Views.LoginPage.xaml
 build_metadata.AdditionalFiles.TargetPath = Views\LoginPage.xaml
@@ -97,7 +97,7 @@ build_metadata.AdditionalFiles.NoWarn =
 build_metadata.AdditionalFiles.EnableDiagnostics = 
 build_metadata.AdditionalFiles.LineInfo = 
 
-[C:/Users/guile/source/repos/AppFletesMueve/AppFletesMueve/Views/RegistroPage.xaml]
+[D:/Facultad Carrera Analista/Seminario Integrador/FletesYa/AppFletesMueve/Views/RegistroPage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = AppFletesMueve.Views.RegistroPage.xaml
 build_metadata.AdditionalFiles.TargetPath = Views\RegistroPage.xaml

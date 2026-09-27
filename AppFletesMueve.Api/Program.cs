@@ -7,10 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Entity Framework Core + SQL Server LocalDB
-builder.Services.AddDbContext<MueveDbContext>(options =>
-    options.UseSqlServer(
-        @"Server=(localdb)\MSSQLLocalDB;Database=MueveDb;Trusted_Connection=True;TrustServerCertificate=True;"
-    ));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=mueve.db";
+
+builder.Services.AddDbContext<MueveDbContext>(options => options.UseSqlite(connectionString));
 
 builder.Services.AddOpenApi();
 

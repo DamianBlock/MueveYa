@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AppFletesMueve")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+c3bae34486968b00a038899eb0c5a88270f4cdcb")]
 [assembly: System.Reflection.AssemblyProductAttribute("AppFletesMueve")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AppFletesMueve")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
