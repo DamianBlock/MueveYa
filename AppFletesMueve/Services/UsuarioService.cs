@@ -6,9 +6,12 @@ namespace AppFletesMueve.Services
     public class UsuarioService
     {
         private readonly HttpClient _httpClient;
-
-        private const string ApiUrl = "https://personality-installing-qualified-journalist.trycloudflare.com/api/";
-
+#if DEBUG
+        private const string ApiUrl = "http://10.0.2.2:5051/api/"; // emulador Android, desarrollo local
+#else
+        private const string ApiUrl = "https://mueveya.onrender.com/api/"; // producción
+#endif
+     /*        private const string ApiUrl = "https://mueveya.onrender.com/api/";*/ 
         public UsuarioService()
         {
             _httpClient = new HttpClient();
