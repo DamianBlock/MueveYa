@@ -1,9 +1,13 @@
 using AppFletesMueve.Api.Data;
+using AppFletesMueve.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 var connectionString = !string.IsNullOrWhiteSpace(databaseUrl)
@@ -21,6 +25,17 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MueveDbContext>();
     db.Database.Migrate();
+
+    if (!db.TiposCarga.Any())
+    {
+        db.TiposCarga.AddRange(
+            new TipoCarga { Nombre = "Muebles", PesoEstimadoKg = 40, VolumenEstimadoM3 = 0.8 },
+            new TipoCarga { Nombre = "Electrodomésticos", PesoEstimadoKg = 60, VolumenEstimadoM3 = 0.6 },
+            new TipoCarga { Nombre = "Cajas y bultos", PesoEstimadoKg = 15, VolumenEstimadoM3 = 0.1 },
+            new TipoCarga { Nombre = "Materiales de construcción", PesoEstimadoKg = 200, VolumenEstimadoM3 = 0.5 },
+            new TipoCarga { Nombre = "Otros", PesoEstimadoKg = 20, VolumenEstimadoM3 = 0.2 });
+        db.SaveChanges();
+    }
 }
 
 if (app.Environment.IsDevelopment())
