@@ -1,0 +1,215 @@
+﻿using AppFletesMueve.Api.Data;
+using AppFletesMueve.Api.Dtos;
+using AppFletesMueve.Api.Models;
+using AppFletesMueve.Api.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace AppFletesMueve.Api.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SolicitudesFleteController : ControllerBase
+    {
+        private readonly MueveDbContext _context;
+        private readonly ICalculadoraTarifas _tarifas;
+
+        public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas)
+        {
+            _context = context;
+            _tarifas = tarifas;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<SolicitudFleteDto>> Crear(CrearSolicitudFleteDto dto)
+        {
+            var cliente = await _context.Usuarios.FindAsync(dto.ClienteId);
+            if (cliente is null)
+                return NotFound(new { mensaje = "El cliente no existe" });
+
+            var tipoCargaIds = dto.Cargas.Select(c => c.TipoCargaId).ToList();
+            var tiposCarga = await _context.TiposCarga
+                .Where(t => tipoCargaIds.Contains(t.TipoCargaId))
+                .ToDictionaryAsync(t => t.TipoCargaId);
+
+            if (tiposCarga.Count != tipoCargaIds.Distinct().Count())
+                return BadRequest(new { mensaje = "Hay un tipo de carga inválido" });
+
+            var cargas = dto.Cargas.Select(c =>
+            {
+                var tipo = tiposCarga[c.TipoCargaId];
+                return new SolicitudCarga
+                {
+                    TipoCargaId = c.TipoCargaId,
+                    Cantidad = c.Cantidad,
+                    PesoKg = tipo.PesoEstimadoKg * c.Cantidad,
+                    VolumenM3 = tipo.VolumenEstimadoM3 * c.Cantidad
+                };
+            }).ToList();
+
+            var pesoTotal = cargas.Sum(c => c.PesoKg);
+            var precio = _tarifas.Calcular(dto.DistanciaKm, pesoTotal, dto.TipoServicio);
+
+            var solicitud = new SolicitudFlete
+            {
+                ClienteId = dto.ClienteId,
+                TipoServicio = dto.TipoServicio,
+                FechaProgramada = dto.FechaProgramada?.ToUniversalTime(),
+                DireccionOrigen = dto.DireccionOrigen.Trim(),
+                LatitudOrigen = dto.LatitudOrigen,
+                LongitudOrigen = dto.LongitudOrigen,
+                DireccionDestino = dto.DireccionDestino.Trim(),
+                LatitudDestino = dto.LatitudDestino,
+                LongitudDestino = dto.LongitudDestino,
+                DistanciaKm = dto.DistanciaKm,
+                Precio = precio,
+                Estado = EstadoSolicitud.Pendiente,
+                Cargas = cargas
+            };
+
+            _context.SolicitudesFlete.Add(solicitud);
+            await _context.SaveChangesAsync();
+
+            var resultado = await ObtenerDto(solicitud.SolicitudFleteId);
+            return CreatedAtAction(nameof(ObtenerPorId),
+                new { id = solicitud.SolicitudFleteId }, resultado);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<SolicitudFleteDto>> ObtenerPorId(int id)
+        {
+            var dto = await ObtenerDto(id);
+            return dto is null ? NotFound() : Ok(dto);
+        }
+
+        // Lo que un conductor ve para elegir qué aceptar
+        [HttpGet("pendientes")]
+        public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPendientes()
+        {
+            var ids = await _context.SolicitudesFlete
+                .Where(s => s.Estado == EstadoSolicitud.Pendiente)
+                .OrderBy(s => s.FechaSolicitud)
+                .Select(s => s.SolicitudFleteId)
+                .ToListAsync();
+
+            var resultado = new List<SolicitudFleteDto>();
+            foreach (var id in ids)
+            {
+                var dto = await ObtenerDto(id);
+                if (dto is not null) resultado.Add(dto);
+            }
+            return Ok(resultado);
+        }
+
+        // Historial de un cliente
+        [HttpGet("cliente/{clienteId:int}")]
+        public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPorCliente(int clienteId)
+        {
+            var ids = await _context.SolicitudesFlete
+                .Where(s => s.ClienteId == clienteId)
+                .OrderByDescending(s => s.FechaSolicitud)
+                .Select(s => s.SolicitudFleteId)
+                .ToListAsync();
+
+            var resultado = new List<SolicitudFleteDto>();
+            foreach (var id in ids)
+            {
+                var dto = await ObtenerDto(id);
+                if (dto is not null) resultado.Add(dto);
+            }
+            return Ok(resultado);
+        }
+
+        [HttpPut("{id:int}/aceptar")]
+        public async Task<ActionResult<SolicitudFleteDto>> Aceptar(int id, AceptarSolicitudDto dto)
+        {
+            var solicitud = await _context.SolicitudesFlete.FindAsync(id);
+            if (solicitud is null)
+                return NotFound();
+
+            if (solicitud.Estado != EstadoSolicitud.Pendiente)
+                return Conflict(new { mensaje = "La solicitud ya no está pendiente" });
+
+            var vehiculo = await _context.Vehiculos
+                .FirstOrDefaultAsync(v => v.VehiculoId == dto.VehiculoId
+                    && v.ConductorId == dto.ConductorId);
+            if (vehiculo is null)
+                return BadRequest(new { mensaje = "El vehículo no pertenece a ese conductor" });
+
+            if (!vehiculo.Disponible)
+                return Conflict(new { mensaje = "El vehículo no está disponible" });
+
+            solicitud.ConductorId = dto.ConductorId;
+            solicitud.VehiculoId = dto.VehiculoId;
+            solicitud.Estado = EstadoSolicitud.Aceptada;
+            vehiculo.Disponible = false;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(await ObtenerDto(id));
+        }
+
+        [HttpPut("{id:int}/cancelar")]
+        public async Task<ActionResult<SolicitudFleteDto>> Cancelar(int id)
+        {
+            var solicitud = await _context.SolicitudesFlete.FindAsync(id);
+            if (solicitud is null)
+                return NotFound();
+
+            if (solicitud.Estado is EstadoSolicitud.Completada or EstadoSolicitud.Cancelada)
+                return Conflict(new { mensaje = "La solicitud ya está cerrada" });
+
+            if (solicitud.VehiculoId.HasValue)
+            {
+                var vehiculo = await _context.Vehiculos.FindAsync(solicitud.VehiculoId.Value);
+                if (vehiculo is not null) vehiculo.Disponible = true;
+            }
+
+            solicitud.Estado = EstadoSolicitud.Cancelada;
+            await _context.SaveChangesAsync();
+
+            return Ok(await ObtenerDto(id));
+        }
+
+        private async Task<SolicitudFleteDto?> ObtenerDto(int id)
+        {
+            var s = await _context.SolicitudesFlete
+                .AsNoTracking()
+                .Include(x => x.Cliente)
+                .Include(x => x.Cargas)
+                    .ThenInclude(c => c.TipoCarga)
+                .FirstOrDefaultAsync(x => x.SolicitudFleteId == id);
+
+            if (s is null) return null;
+
+            return new SolicitudFleteDto
+            {
+                SolicitudFleteId = s.SolicitudFleteId,
+                ClienteId = s.ClienteId,
+                ClienteNombre = $"{s.Cliente.Nombre} {s.Cliente.Apellido}".Trim(),
+                ConductorId = s.ConductorId,
+                VehiculoId = s.VehiculoId,
+                TipoServicio = s.TipoServicio,
+                FechaSolicitud = s.FechaSolicitud,
+                FechaProgramada = s.FechaProgramada,
+                DireccionOrigen = s.DireccionOrigen,
+                LatitudOrigen = s.LatitudOrigen,
+                LongitudOrigen = s.LongitudOrigen,
+                DireccionDestino = s.DireccionDestino,
+                LatitudDestino = s.LatitudDestino,
+                LongitudDestino = s.LongitudDestino,
+                DistanciaKm = s.DistanciaKm,
+                Precio = s.Precio,
+                Estado = s.Estado,
+                Cargas = s.Cargas.Select(c => new CargaDto
+                {
+                    TipoCargaId = c.TipoCargaId,
+                    TipoCargaNombre = c.TipoCarga.Nombre,
+                    Cantidad = c.Cantidad,
+                    PesoKg = c.PesoKg,
+                    VolumenM3 = c.VolumenM3
+                }).ToList()
+            };
+        }
+    }
+}

@@ -1,5 +1,6 @@
 using AppFletesMueve.Api.Data;
 using AppFletesMueve.Api.Models;
+using AppFletesMueve.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,8 @@ builder.Services.AddDbContext<MueveDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddOpenApi();
+
+builder.Services.AddScoped<ICalculadoraTarifas, CalculadoraTarifas>();      
 
 var app = builder.Build();
 
