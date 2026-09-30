@@ -37,17 +37,29 @@ public partial class LoginPage : ContentPage
         Preferences.Set("Email", usuario.Email);
         Preferences.Set("TipoUsuario", usuario.TipoUsuario);
 
-        if (usuario.TipoUsuario == "CLIENTE")
+        var app = Application.Current;
+        if (app?.Windows?.Count > 0)
         {
-            Application.Current.MainPage =
-                new NavigationPage(
-                    new MainPage());
+            if (usuario.TipoUsuario == "CLIENTE")
+            {
+                app.Windows[0].Page = new NavigationPage(new MainPage());
+            }
+            else
+            {
+                app.Windows[0].Page = new NavigationPage(new HomeConductor());
+            }
         }
         else
         {
-            Application.Current.MainPage =
-                new NavigationPage(
-                    new HomeConductor());
+            // Fallback: mantiene compatibilidad si no hay ventanas (comportamiento heredado)
+            if (usuario.TipoUsuario == "CLIENTE")
+            {
+                app.MainPage = new NavigationPage(new MainPage());
+            }
+            else
+            {
+                app.MainPage = new NavigationPage(new HomeConductor());
+            }
         }
     }
 
