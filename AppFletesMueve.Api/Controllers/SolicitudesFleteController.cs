@@ -170,7 +170,21 @@ namespace AppFletesMueve.Api.Controllers
 
             return Ok(await ObtenerDto(id));
         }
+        [HttpGet("conductor/{conductorId:int}/activa")]
+        public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorConductor(int conductorId)
+        {
+            var id = await _context.SolicitudesFlete
+                .Where(s => s.ConductorId == conductorId &&
+                    (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso))
+                .OrderByDescending(s => s.FechaSolicitud)
+                .Select(s => s.SolicitudFleteId)
+                .FirstOrDefaultAsync();
 
+            if (id == 0) return NotFound();
+
+            var dto = await ObtenerDto(id);
+            return dto is null ? NotFound() : Ok(dto);
+        }
         [HttpPut("{id:int}/completar")]
         public async Task<ActionResult<SolicitudFleteDto>> Completar(int id)
         {

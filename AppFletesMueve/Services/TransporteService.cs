@@ -153,5 +153,20 @@ namespace AppFletesMueve.Services
                 .GetFromJsonAsync<List<VehiculoDisponibleDto>>(ApiUrl + $"Vehiculos/conductor/{conductorId}");
             return resultado ?? new List<VehiculoDisponibleDto>();
         }
+        public async Task<SolicitudFleteDto?> ObtenerViajeActivoDeConductor(int conductorId)
+        {
+            var response = await _httpClient.GetAsync(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}/activa");
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+        }
+
+        public async Task<SolicitudFleteDto?> CompletarSolicitud(int solicitudId)
+        {
+            var response = await _httpClient.PutAsync(
+                $"{ApiUrl}SolicitudesFlete/{solicitudId}/completar", null);
+
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+        }
     }
 }

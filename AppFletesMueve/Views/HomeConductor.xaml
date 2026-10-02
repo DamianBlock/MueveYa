@@ -93,43 +93,33 @@
             </Frame>
 
             <!-- VIAJE -->
-
             <Frame
                 Margin="15,0"
                 CornerRadius="12"
-                BackgroundColor="White">
+                BackgroundColor="White">    
 
-                <VerticalStackLayout Spacing="10">
+                <VerticalStackLayout x:Name="contenedorViaje" Spacing="10" IsVisible="False">
 
                     <Label
+                        x:Name="lblTituloViaje"
                         Text="Solicitud de Viaje"
                         FontAttributes="Bold"
                         FontSize="18"
                         TextColor="#E65100"/>
 
-                    <Label
-                        Text="Cliente: Juan Pérez"
-                        TextColor="Black"/>
+                    <Label x:Name="lblCliente" TextColor="Black"/>
+                    <Label x:Name="lblOrigen" TextColor="Black"/>
+                    <Label x:Name="lblDestino" TextColor="Black"/>
+                    <Label x:Name="lblVehiculo" TextColor="Black"/>
 
                     <Label
-                        Text="Origen: Av. Reforma 222"
-                        TextColor="Black"/>
-
-                    <Label
-                        Text="Destino: Roma Norte"
-                        TextColor="Black"/>
-
-                    <Label
-                        Text="Vehículo: Camión 3.5 Ton"
-                        TextColor="Black"/>
-
-                    <Label
-                        Text="$690 MXN"
+                        x:Name="lblPrecio"
                         FontSize="22"
                         FontAttributes="Bold"
                         TextColor="#E65100"/>
 
                     <Button
+                        x:Name="btnAccion"
                         Text="ACEPTAR VIAJE"
                         BackgroundColor="#E65100"
                         TextColor="White"
@@ -137,6 +127,13 @@
                         Clicked="AceptarViaje_Clicked"/>
 
                 </VerticalStackLayout>
+
+                <Label
+                    x:Name="lblSinViajes"
+                    Text="Buscando viajes disponibles..."
+                    TextColor="Gray"
+                    HorizontalOptions="Center"
+                    Margin="0,20"/>
 
             </Frame>
 

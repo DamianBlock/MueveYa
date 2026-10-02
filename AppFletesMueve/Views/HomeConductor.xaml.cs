@@ -6,11 +6,15 @@ namespace AppFletesMueve.Views;
 public partial class HomeConductor : ContentPage
 {
     private readonly TransporteService _transporteService = new();
-    private SolicitudFleteDto? _solicitudActual;
-    private int? _conductorId;
-    private int? _vehiculoId;
 
-    public string Saludo { get; set; }
+    private int? _conductorId;
+    private int? _vehiculoIdPropio;
+    private List<VehiculoDisponibleDto> _misVehiculos = new();
+
+    private SolicitudFleteDto? _solicitudPendiente;
+    private SolicitudFleteDto? _solicitudEnCurso;
+
+    public string Saludo { get; set; } = string.Empty;
 
     public HomeConductor()
     {
@@ -21,45 +25,120 @@ public partial class HomeConductor : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await CargarSolicitudPendiente();
+        await CargarEstadoAsync();
     }
 
-    private async Task CargarSolicitudPendiente()
+    private async Task CargarEstadoAsync()
     {
-        var conductor = await _transporteService.ObtenerConductorPorUsuario(SesionUsuario.UsuarioId);
-        if (conductor is null)
+        if (_conductorId is null)
         {
-            await DisplayAlert("MUEVE", "Todavía no tenés un perfil de conductor cargado.", "OK");
+            var conductor = await _transporteService.ObtenerConductorPorUsuario(SesionUsuario.UsuarioId);
+            if (conductor is null)
+            {
+                MostrarSinViajes("Todavía no tenés un perfil de conductor cargado.");
+                return;
+            }
+
+            _conductorId = conductor.ConductorId;
+            _misVehiculos = await _transporteService.ObtenerVehiculosDeConductor(conductor.ConductorId);
+            _vehiculoIdPropio = _misVehiculos.FirstOrDefault()?.VehiculoId;
+        }
+
+        // Prioridad 1: ¿ya tengo un viaje en curso?
+        _solicitudEnCurso = await _transporteService.ObtenerViajeActivoDeConductor(_conductorId.Value);
+        if (_solicitudEnCurso != null)
+        {
+            MostrarViajeEnCurso(_solicitudEnCurso);
             return;
         }
 
-        _conductorId = conductor.ConductorId;
-
-        var vehiculos = await _transporteService.ObtenerVehiculosDeConductor(conductor.ConductorId);
-        _vehiculoId = vehiculos.FirstOrDefault()?.VehiculoId;
-
+        // Prioridad 2: ¿hay algún viaje pendiente para tomar?
         var pendientes = await _transporteService.ObtenerSolicitudesPendientes();
-        _solicitudActual = pendientes.FirstOrDefault();
+        _solicitudPendiente = pendientes.FirstOrDefault();
+
+        if (_solicitudPendiente != null)
+        {
+            MostrarViajePendiente(_solicitudPendiente);
+        }
+        else
+        {
+            MostrarSinViajes("Buscando viajes disponibles...");
+        }
+    }
+
+    private void MostrarSinViajes(string mensaje)
+    {
+        contenedorViaje.IsVisible = false;
+        lblSinViajes.IsVisible = true;
+        lblSinViajes.Text = mensaje;
+    }
+
+    private void MostrarViajePendiente(SolicitudFleteDto s)
+    {
+        lblSinViajes.IsVisible = false;
+        contenedorViaje.IsVisible = true;
+
+        lblTituloViaje.Text = "Solicitud de Viaje";
+        lblCliente.Text = $"Cliente: {s.ClienteNombre}";
+        lblOrigen.Text = $"Origen: {s.DireccionOrigen}";
+        lblDestino.Text = $"Destino: {s.DireccionDestino}";
+        lblVehiculo.Text = "Vehículo: el tuyo";
+        lblPrecio.Text = $"${s.Precio:0.00} MXN";
+
+        btnAccion.Text = "ACEPTAR VIAJE";
+    }
+
+    private void MostrarViajeEnCurso(SolicitudFleteDto s)
+    {
+        lblSinViajes.IsVisible = false;
+        contenedorViaje.IsVisible = true;
+
+        var vehiculo = _misVehiculos.FirstOrDefault(v => v.VehiculoId == s.VehiculoId);
+
+        lblTituloViaje.Text = "Viaje en curso";
+        lblCliente.Text = $"Cliente: {s.ClienteNombre}";
+        lblOrigen.Text = $"Origen: {s.DireccionOrigen}";
+        lblDestino.Text = $"Destino: {s.DireccionDestino}";
+        lblVehiculo.Text = vehiculo != null
+            ? $"Vehículo: {vehiculo.Marca} {vehiculo.Modelo} ({vehiculo.Patente})"
+            : "Vehículo asignado";
+        lblPrecio.Text = $"${s.Precio:0.00} MXN";
+
+        btnAccion.Text = "FINALIZAR VIAJE";
     }
 
     private async void AceptarViaje_Clicked(object sender, EventArgs e)
     {
-        if (_solicitudActual is null || _conductorId is null || _vehiculoId is null)
+        try
         {
-            await DisplayAlert("MUEVE", "No hay ningún viaje disponible para aceptar.", "Aceptar");
-            return;
+            if (_solicitudEnCurso != null)
+            {
+                // El botón dice "FINALIZAR VIAJE"
+                var resultado = await _transporteService.CompletarSolicitud(_solicitudEnCurso.SolicitudFleteId);
+                await DisplayAlert("MUEVE",
+                    resultado != null ? "Viaje finalizado correctamente." : "No se pudo finalizar el viaje.",
+                    "Aceptar");
+            }
+            else if (_solicitudPendiente != null && _conductorId.HasValue && _vehiculoIdPropio.HasValue)
+            {
+                // El botón dice "ACEPTAR VIAJE"
+                var resultado = await _transporteService.AceptarSolicitud(
+                    _solicitudPendiente.SolicitudFleteId, _conductorId.Value, _vehiculoIdPropio.Value);
+
+                await DisplayAlert("MUEVE",
+                    resultado != null ? "Viaje aceptado correctamente." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
+                    "Aceptar");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("MUEVE", "No se pudo conectar con el servidor.", "Aceptar");
+            System.Diagnostics.Debug.WriteLine($"Error en acción de viaje: {ex}");
         }
 
-        var resultado = await _transporteService.AceptarSolicitud(
-            _solicitudActual.SolicitudFleteId, _conductorId.Value, _vehiculoId.Value);
-
-        var mensaje = resultado != null
-            ? "Viaje aceptado correctamente."
-            : "No se pudo aceptar el viaje. Puede que otro conductor ya lo haya tomado.";
-
-        await DisplayAlert("MUEVE", mensaje, "Aceptar");
-
-        _solicitudActual = null;
+        _solicitudPendiente = null;
+        _solicitudEnCurso = null;
+        await CargarEstadoAsync();
     }
 
     private async void CerrarSesion_Tapped(object sender, TappedEventArgs e)
@@ -68,6 +147,8 @@ public partial class HomeConductor : ContentPage
         if (!salir) return;
 
         Preferences.Clear();
-        Application.Current!.Windows[0].Page = new NavigationPage(new LoginPage());
+        var app = Application.Current;
+        if (app?.Windows?.Count > 0)
+            app.Windows[0].Page = new NavigationPage(new LoginPage());
     }
 }
