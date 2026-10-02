@@ -54,6 +54,18 @@ namespace AppFletesMueve.Services
                     Password = password
                 });
 
+            // Log status and response body for debugging
+            try
+            {
+                var contenido = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"API STATUS: {(int)response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"API RESPUESTA: {contenido}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ERROR leyendo respuesta API: {ex}");
+            }
+
             if (!response.IsSuccessStatusCode)
                 return null;
 

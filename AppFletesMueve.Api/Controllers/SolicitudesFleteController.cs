@@ -171,6 +171,27 @@ namespace AppFletesMueve.Api.Controllers
             return Ok(await ObtenerDto(id));
         }
 
+        [HttpPut("{id:int}/completar")]
+        public async Task<ActionResult<SolicitudFleteDto>> Completar(int id)
+        {
+            var solicitud = await _context.SolicitudesFlete.FindAsync(id);
+            if (solicitud is null)
+                return NotFound();
+
+            if (solicitud.Estado != EstadoSolicitud.Aceptada && solicitud.Estado != EstadoSolicitud.EnCurso)
+                return Conflict(new { mensaje = "La solicitud no está en curso" });
+
+            if (solicitud.VehiculoId.HasValue)
+            {
+                var vehiculo = await _context.Vehiculos.FindAsync(solicitud.VehiculoId.Value);
+                if (vehiculo is not null) vehiculo.Disponible = true;
+            }
+
+            solicitud.Estado = EstadoSolicitud.Completada;
+            await _context.SaveChangesAsync();
+
+            return Ok(await ObtenerDto(id));
+        }
         private async Task<SolicitudFleteDto?> ObtenerDto(int id)
         {
             var s = await _context.SolicitudesFlete

@@ -68,7 +68,9 @@ namespace AppFletesMueve.ViewModels
                     });
                 }
 
-                VehiculoSeleccionado = Vehiculos.FirstOrDefault();
+                // No seleccionar automáticamente el primer vehículo para
+                // permitir que el usuario vea el cambio visual al tocar.
+                // VehiculoSeleccionado = Vehiculos.FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -84,10 +86,22 @@ namespace AppFletesMueve.ViewModels
 
         private async Task ConfirmarFleteAsync()
         {
-            if (VehiculoSeleccionado == null || SesionUsuario.UsuarioId == 0)
-                return;
+            var page = Application.Current?.Windows?.FirstOrDefault()?.Page;
 
-            // Ruta de ejemplo fija hasta integrar mapa/geolocalización
+            if (VehiculoSeleccionado == null)
+            {
+                if (page != null)
+                    await page.DisplayAlert("MUEVE", "Seleccioná un vehículo antes de confirmar.", "OK");
+                return;
+            }
+
+            if (SesionUsuario.UsuarioId == 0)
+            {
+                if (page != null)
+                    await page.DisplayAlert("MUEVE", "Debés iniciar sesión para confirmar un flete.", "OK");
+                return;
+            }
+
             var request = new CrearSolicitudFleteRequest
             {
                 ClienteId = SesionUsuario.UsuarioId,
@@ -100,20 +114,28 @@ namespace AppFletesMueve.ViewModels
                 LongitudDestino = -65.21,
                 DistanciaKm = 5.5,
                 Cargas = new List<ItemCargaRequest>
-                {
-                    new ItemCargaRequest { TipoCargaId = 1, Cantidad = 1 }
-                }
+        {
+            new ItemCargaRequest { TipoCargaId = 1, Cantidad = 1 }
+        }
             };
 
-            var resultado = await _transporteService.CrearSolicitud(request);
+            string mensaje;
+            try
+            {
+                var resultado = await _transporteService.CrearSolicitud(request);
+                mensaje = resultado != null
+                    ? $"Solicitud creada. Precio estimado: ${resultado.Precio:0.00}. Buscando conductor..."
+                    : "No se pudo crear la solicitud. Intentá de nuevo.";
+            }
+            catch (Exception ex)
+            {
+                mensaje = "No se pudo conectar con el servidor. Verificá tu conexión.";
+                System.Diagnostics.Debug.WriteLine($"Error al crear solicitud: {ex}");
+            }
 
-            var mensaje = resultado != null
-                ? $"Solicitud creada. Precio estimado: ${resultado.Precio:0.00}. Buscando conductor..."
-                : "No se pudo crear la solicitud. Intentá de nuevo.";
-
-            await Shell.Current.DisplayAlert("MUEVE", mensaje, "OK");
+            if (page != null)
+                await page.DisplayAlert("MUEVE", mensaje, "OK");
         }
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

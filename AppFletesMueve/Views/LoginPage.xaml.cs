@@ -6,27 +6,36 @@ namespace AppFletesMueve.Views;
 public partial class LoginPage : ContentPage
 {
     private readonly UsuarioService _usuarioService;
-	public LoginPage()
-	{
-		InitializeComponent();
-		_usuarioService = new UsuarioService();
-	}
+
+    public LoginPage()
+    {
+        InitializeComponent();
+        _usuarioService = new UsuarioService();
+    }
 
     private async void Ingresar_Clicked(object sender, EventArgs e)
     {
-        var usuario = await _usuarioService.Login(
-            txtEmail.Text,
-            txtPassword.Text);
+        Usuario? usuario;
+        try
+        {
+            usuario = await _usuarioService.Login(txtEmail.Text, txtPassword.Text);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert(
+                "Error de conexión",
+                "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.",
+                "Aceptar");
+            System.Diagnostics.Debug.WriteLine($"Error de login: {ex}");
+            return;
+        }
 
         if (usuario == null)
         {
-            await DisplayAlert(
-                "Error",
-                "Usuario o contraseña incorrectos",
-                "Aceptar");
-
+            await DisplayAlert("Error", "Usuario o contraseña incorrectos", "Aceptar");
             return;
         }
+
         SesionUsuario.UsuarioId = usuario.UsuarioId;
         SesionUsuario.Nombre = usuario.Nombre;
         SesionUsuario.TipoUsuario = usuario.TipoUsuario;
@@ -40,26 +49,9 @@ public partial class LoginPage : ContentPage
         var app = Application.Current;
         if (app?.Windows?.Count > 0)
         {
-            if (usuario.TipoUsuario == "CLIENTE")
-            {
-                app.Windows[0].Page = new NavigationPage(new MainPage());
-            }
-            else
-            {
-                app.Windows[0].Page = new NavigationPage(new HomeConductor());
-            }
-        }
-        else
-        {
-            // Fallback: mantiene compatibilidad si no hay ventanas (comportamiento heredado)
-            if (usuario.TipoUsuario == "CLIENTE")
-            {
-                app.MainPage = new NavigationPage(new MainPage());
-            }
-            else
-            {
-                app.MainPage = new NavigationPage(new HomeConductor());
-            }
+            app.Windows[0].Page = usuario.TipoUsuario == "CLIENTE"
+                ? new NavigationPage(new MainPage())
+                : new NavigationPage(new HomeConductor());
         }
     }
 

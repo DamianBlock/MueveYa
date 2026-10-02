@@ -17,6 +17,14 @@ Preferences.Get("Nombre", "Cliente");
             lblBienvenida.Text = $"Hola, {nombre}";
         }
 
+        private void Vehiculos_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (BindingContext is ViewModels.MainViewModel vm)
+            {
+                vm.VehiculoSeleccionado = e.CurrentSelection?.FirstOrDefault() as Models.VehiculoModel;
+            }
+        }
+
         private async void AbrirRegistro_Clicked(object sender, EventArgs e)
         {
             var usuarioService =

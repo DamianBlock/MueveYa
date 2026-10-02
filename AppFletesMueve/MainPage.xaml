@@ -155,7 +155,9 @@ VerticalOptions="Center"/>
                 <CollectionView
     ItemsSource="{Binding Vehiculos}"
     HeightRequest="180"
-    SelectionMode="None">
+    SelectionMode="Single"
+    SelectedItem="{Binding VehiculoSeleccionado}"
+    SelectionChanged="Vehiculos_SelectionChanged">
 
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout
@@ -173,6 +175,25 @@ VerticalOptions="Center"/>
                 StrokeShape="RoundRectangle 10"
                 WidthRequest="140"
                 Padding="10">
+
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup Name="CommonStates">
+                                        <VisualState Name="Normal">
+                                            <VisualState.Setters>
+                                                <Setter Property="Stroke" Value="#E65100" />
+                                                <Setter Property="StrokeThickness" Value="2" />
+                                                <Setter Property="BackgroundColor" Value="#FFFFFF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Property="Stroke" Value="#FFB74D" />
+                                                <Setter Property="StrokeThickness" Value="3" />
+                                                <Setter Property="BackgroundColor" Value="#FFF3E0" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
 
                                 <VerticalStackLayout>
 
@@ -202,7 +223,8 @@ VerticalOptions="Center"/>
                 </CollectionView>
 
                 <Button
-    Text="Confirmar Flete - $350 MXN"
+    Text="{Binding TextoBotonConfirmar}"
+    Command="{Binding ConfirmarFleteCommand}"
     BackgroundColor="#E65100"
     TextColor="White"/>
 
