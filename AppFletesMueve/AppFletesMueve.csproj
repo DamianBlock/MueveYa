@@ -75,6 +75,9 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+	  <MauiXaml Update="Views\CompletarPerfilConductorPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\HomeConductor.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

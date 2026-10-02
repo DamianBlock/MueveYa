@@ -2,6 +2,23 @@
 
 namespace AppFletesMueve.Services
 {
+    public class CrearConductorRequest
+    {
+        public int UsuarioId { get; set; }
+        public string Licencia { get; set; } = string.Empty;
+    }
+
+    public class CrearVehiculoRequest
+    {
+        public int ConductorId { get; set; }
+        public string Patente { get; set; } = string.Empty;
+        public string Marca { get; set; } = string.Empty;
+        public string Modelo { get; set; } = string.Empty;
+        public int Anio { get; set; }
+        public string TipoVehiculo { get; set; } = string.Empty;
+        public double CapacidadKg { get; set; }
+        public double VolumenM3 { get; set; }
+    }
     public class VehiculoDisponibleDto
     {
         public int VehiculoId { get; set; }
@@ -94,7 +111,34 @@ namespace AppFletesMueve.Services
         {
             _httpClient = new HttpClient();
         }
+        public async Task<(bool Success, string? ErrorMessage)> CrearConductor(int usuarioId, string licencia)
+        {
+            var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Conductores",
+                new CrearConductorRequest { UsuarioId = usuarioId, Licencia = licencia });
 
+            if (response.IsSuccessStatusCode) return (true, null);
+            return (false, await LeerMensajeError(response));
+        }
+
+        public async Task<(bool Success, string? ErrorMessage)> CrearVehiculo(CrearVehiculoRequest request)
+        {
+            var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Vehiculos", request);
+
+            if (response.IsSuccessStatusCode) return (true, null);
+            return (false, await LeerMensajeError(response));
+        }
+
+        private static async Task<string> LeerMensajeError(HttpResponseMessage response)
+        {
+            try
+            {
+                var json = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                if (json != null && json.TryGetValue("mensaje", out var m))
+                    return m?.ToString() ?? "Ocurrió un error.";
+            }
+            catch { }
+            return "Ocurrió un error.";
+        }
         public async Task<List<TipoCargaDto>> ObtenerTiposCarga()
         {
             var resultado = await _httpClient

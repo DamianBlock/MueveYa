@@ -36,6 +36,7 @@ public partial class HomeConductor : ContentPage
             if (conductor is null)
             {
                 MostrarSinViajes("Todavía no tenés un perfil de conductor cargado.");
+                btnCompletarPerfil.IsVisible = true;
                 return;
             }
 
@@ -71,10 +72,12 @@ public partial class HomeConductor : ContentPage
         contenedorViaje.IsVisible = false;
         lblSinViajes.IsVisible = true;
         lblSinViajes.Text = mensaje;
+        // btnCompletarPerfil se activa explícitamente solo cuando falta el perfil
     }
 
     private void MostrarViajePendiente(SolicitudFleteDto s)
     {
+        btnCompletarPerfil.IsVisible = false;
         lblSinViajes.IsVisible = false;
         contenedorViaje.IsVisible = true;
 
@@ -90,6 +93,7 @@ public partial class HomeConductor : ContentPage
 
     private void MostrarViajeEnCurso(SolicitudFleteDto s)
     {
+        btnCompletarPerfil.IsVisible = false;
         lblSinViajes.IsVisible = false;
         contenedorViaje.IsVisible = true;
 
@@ -106,7 +110,10 @@ public partial class HomeConductor : ContentPage
 
         btnAccion.Text = "FINALIZAR VIAJE";
     }
-
+    private async void CompletarPerfil_Clicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new CompletarPerfilConductorPage());
+    }
     private async void AceptarViaje_Clicked(object sender, EventArgs e)
     {
         try
