@@ -1,7 +1,9 @@
 ﻿using AppFletesMueve.Services;
 using AppFletesMueve.ViewModels;
+using AppFletesMueve.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.Maps;
+using Microsoft.Maui.Maps;
 using Microsoft.Maui.Devices.Sensors;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;

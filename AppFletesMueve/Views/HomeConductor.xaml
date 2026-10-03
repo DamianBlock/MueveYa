@@ -77,6 +77,8 @@
 
                 <Grid HeightRequest="220">
                     <maps:Map x:Name="mapConductor" />
+                    <!-- Nota: MAUI Maps no define PinClicked en Map; gestionar taps de pines requiere otra aproximación -->
+
 
                     <Label
                         Text="Ubicación del Cliente"

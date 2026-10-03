@@ -227,5 +227,47 @@ namespace AppFletesMueve.Services
             if (v.TipoVehiculo?.ToLower().Contains("caja") == true) perKm = 18;
             return Math.Round(baseFare + perKm * distanciaKm, 2);
         }
+
+        public async Task<(bool, string?)> CrearConductor(int usuarioId, string licencia)
+        {
+            try
+            {
+                var request = new CrearConductorRequest { UsuarioId = usuarioId, Licencia = licencia };
+                var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Conductores", request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMsg = await LeerMensajeError(response);
+                    return (false, errorMsg);
+                }
+
+                var conductor = await response.Content.ReadFromJsonAsync<ConductorDto>();
+                return (conductor != null, null);
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
+        }
+
+        public async Task<(bool, string?)> CrearVehiculo(CrearVehiculoRequest request)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Vehiculos", request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMsg = await LeerMensajeError(response);
+                    return (false, errorMsg);
+                }
+
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
+        }
     }
 }

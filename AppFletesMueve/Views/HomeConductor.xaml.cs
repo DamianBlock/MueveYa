@@ -1,8 +1,10 @@
 using AppFletesMueve.Models;
 using AppFletesMueve.Services;
 using Microsoft.Maui.Controls.Maps;
+using Microsoft.Maui.Maps;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Collections.Generic;
 
 namespace AppFletesMueve.Views;
 
@@ -14,6 +16,7 @@ public partial class HomeConductor : ContentPage
     private int? _conductorId;
     private int? _vehiculoIdPropio;
     private List<VehiculoDisponibleDto> _misVehiculos = new();
+    private Dictionary<Pin, SolicitudFleteDto> _pinToSolicitud = new();
 
     private SolicitudFleteDto? _solicitudPendiente;
     private SolicitudFleteDto? _solicitudEnCurso;
@@ -53,23 +56,8 @@ public partial class HomeConductor : ContentPage
                                 Location = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen)
                             };
 
-                            pin.Clicked += async (s, e) =>
-                            {
-                                bool aceptar = await DisplayAlert("Solicitud", $"Aceptar viaje por ${solicitud.Precio:0.00}?", "Sí", "No");
-                                if (aceptar)
-                                {
-                                    try
-                                    {
-                                        var ok = await _transporteService.AceptarSolicitudAsync(solicitud.SolicitudFleteId, _conductorId ?? 0, _vehiculoIdPropio ?? 0);
-                                        await DisplayAlert("MUEVE", ok ? "Viaje aceptado." : "No se pudo aceptar.", "Aceptar");
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        await DisplayAlert("MUEVE", "Error al aceptar la solicitud.", "Aceptar");
-                                        System.Diagnostics.Debug.WriteLine(ex);
-                                    }
-                                }
-                            };
+                            // Almacenar la referencia a la solicitud
+                            _pinToSolicitud[pin] = solicitud;
 
                             mapConductor.Pins.Add(pin);
                         }
@@ -123,23 +111,8 @@ public partial class HomeConductor : ContentPage
                     Location = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen)
                 };
 
-                pin.Clicked += async (s, e) =>
-                {
-                    bool aceptar = await DisplayAlert("Solicitud", $"Aceptar viaje por ${solicitud.Precio:0.00}?", "Sí", "No");
-                    if (aceptar)
-                    {
-                        try
-                        {
-                            var resultado = await _transporteService.AceptarSolicitudAsync(solicitud.SolicitudFleteId, _conductorId ?? 0, _vehiculoIdPropio ?? 0);
-                            await DisplayAlert("MUEVE", resultado ? "Viaje aceptado." : "No se pudo aceptar.", "Aceptar");
-                        }
-                        catch (Exception ex)
-                        {
-                            await DisplayAlert("MUEVE", "Error al aceptar la solicitud.", "Aceptar");
-                            System.Diagnostics.Debug.WriteLine(ex);
-                        }
-                    }
-                };
+                // Almacenar la referencia a la solicitud
+                _pinToSolicitud[pin] = solicitud;
 
                 mapConductor.Pins.Add(pin);
             }
@@ -269,14 +242,20 @@ public partial class HomeConductor : ContentPage
         await CargarEstadoAsync();
     }
 
-    private async void CerrarSesion_Tapped(object sender, TappedEventArgs e)
-    {
-        bool salir = await DisplayAlert("Cerrar sesión", "¿Deseas cerrar sesión?", "Sí", "No");
-        if (!salir) return;
+         private async void CerrarSesion_Tapped(object sender, TappedEventArgs e)
+         {
+             bool salir = await DisplayAlert("Cerrar sesión", "¿Deseas cerrar sesión?", "Sí", "No");
+             if (!salir) return;
 
-        Preferences.Clear();
-        var app = Application.Current;
-        if (app?.Windows?.Count > 0)
-            app.Windows[0].Page = new NavigationPage(new LoginPage());
+             Preferences.Clear();
+             var app = Application.Current;
+             if (app?.Windows?.Count > 0)
+                 app.Windows[0].Page = new NavigationPage(new LoginPage());
+         }
+
+         private void OnMapPinClicked(object sender, EventArgs e)
+         {
+             // Método vacío: el evento PinClicked no existe en MAUI Maps. Si desea manejar taps en pines,
+             // suscriba al evento adecuado o gestione el clic en la vista del pin.
+         }
     }
-}

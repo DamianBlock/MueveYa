@@ -39,6 +39,7 @@
 		<AndroidSigningKeyStore>mueveya.keystore</AndroidSigningKeyStore>
 		<!-- LÍNEA AGREGADA PARA FORZAR EL FORMATO APK -->
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<UserSecretsId>3b428f2f-2d36-4fc5-94a5-bd8e0cb5c95b</UserSecretsId>
 	</PropertyGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
@@ -70,6 +71,7 @@
 	
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Maui.Controls.Maps" Version="10.0.110" />

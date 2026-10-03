@@ -50,7 +50,7 @@ public partial class LoginPage : ContentPage
         if (app?.Windows?.Count > 0)
         {
             app.Windows[0].Page = usuario.TipoUsuario == "CLIENTE"
-                ? new NavigationPage(new MainPage())
+                ? new NavigationPage(new HomeCliente())
                 : new NavigationPage(new HomeConductor());
         }
     }
