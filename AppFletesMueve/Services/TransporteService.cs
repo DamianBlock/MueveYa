@@ -88,9 +88,10 @@ namespace AppFletesMueve.Services
 
         public async Task<ConductorDto?> ObtenerConductorPorUsuario(int usuarioId)
         {
-            try { return await _httpClient.GetFromJsonAsync<ConductorDto?>(ApiUrl + $"Conductores/usuario/{usuarioId}"); }
+            try { return await _httpClient.GetFromJsonAsync<ConductorDto?>(ApiUrl + $"Conductores/por-usuario/{usuarioId}"); }
             catch { return null; }
         }
+
 
         public async Task<List<VehiculoDisponibleDto>> ObtenerVehiculosDeConductor(int conductorId)
         {
@@ -100,10 +101,9 @@ namespace AppFletesMueve.Services
 
         public async Task<SolicitudFleteDto?> ObtenerViajeActivoDeConductor(int conductorId)
         {
-            try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/activo/{conductorId}"); }
+            try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}/activa"); }
             catch { return null; }
         }
-
         public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes()
         {
             try { var r = await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + "SolicitudesFlete/pendientes"); return r ?? new List<SolicitudFleteDto>(); }
@@ -115,48 +115,16 @@ namespace AppFletesMueve.Services
             try
             {
                 var response = await _httpClient.PostAsJsonAsync(ApiUrl + "SolicitudesFlete", request);
-                if (!response.IsSuccessStatusCode)
-                {
-                    var local = new SolicitudFleteDto
-                    {
-                        SolicitudFleteId = new Random().Next(10000, 99999),
-                        ClienteId = request.ClienteId,
-                        ClienteNombre = "Cliente (local)",
-                        DireccionOrigen = request.DireccionOrigen,
-                        DireccionDestino = request.DireccionDestino,
-                        LatitudOrigen = request.LatitudOrigen,
-                        LongitudOrigen = request.LongitudOrigen,
-                        DistanciaKm = request.DistanciaKm,
-                        Precio = (decimal)CalcularPrecioEstimado(request.DistanciaKm, new VehiculoDisponibleDto { TipoVehiculo = "estandar" }),
-                        Estado = "PENDIENTE",
-                        FechaSolicitud = DateTime.UtcNow
-                    };
-                    SolicitudCreada?.Invoke(local);
-                    return local;
-                }
+                if (!response.IsSuccessStatusCode) return null;
 
                 var dto = await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
                 if (dto != null) SolicitudCreada?.Invoke(dto);
                 return dto;
             }
-            catch
+            catch (Exception ex)
             {
-                var local = new SolicitudFleteDto
-                {
-                    SolicitudFleteId = new Random().Next(10000, 99999),
-                    ClienteId = request.ClienteId,
-                    ClienteNombre = "Cliente (local)",
-                    DireccionOrigen = request.DireccionOrigen,
-                    DireccionDestino = request.DireccionDestino,
-                    LatitudOrigen = request.LatitudOrigen,
-                    LongitudOrigen = request.LongitudOrigen,
-                    DistanciaKm = request.DistanciaKm,
-                    Precio = (decimal)CalcularPrecioEstimado(request.DistanciaKm, new VehiculoDisponibleDto { TipoVehiculo = "estandar" }),
-                    Estado = "PENDIENTE",
-                    FechaSolicitud = DateTime.UtcNow
-                };
-                SolicitudCreada?.Invoke(local);
-                return local;
+                System.Diagnostics.Debug.WriteLine($"Error al crear solicitud: {ex}");
+                return null;
             }
         }
 
@@ -164,7 +132,8 @@ namespace AppFletesMueve.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/aceptar", new { ConductorId = conductorId, VehiculoId = vehiculoId });
+                var response = await _httpClient.PutAsJsonAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/aceptar",
+                    new { ConductorId = conductorId, VehiculoId = vehiculoId });
                 if (!response.IsSuccessStatusCode) return null;
                 return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
             }
@@ -181,7 +150,7 @@ namespace AppFletesMueve.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/completar", new { });
+                var response = await _httpClient.PutAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/completar", null);
                 if (!response.IsSuccessStatusCode) return null;
                 return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
             }
