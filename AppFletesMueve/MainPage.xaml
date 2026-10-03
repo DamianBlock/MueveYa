@@ -1,238 +1,214 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="AppFletesMueve.MainPage"
+             x:Name="PaginaPrincipal"
              BackgroundColor="#F5F5F5"
              NavigationPage.HasNavigationBar="False">
 
-    <ScrollView>
+    <Grid>
 
-        <VerticalStackLayout
-        BackgroundColor="#F5F5F5"
-        Spacing="0">
+        <!-- CONTENIDO NORMAL -->
+        <ScrollView>
 
-            <!-- BARRA SUPERIOR -->
+            <VerticalStackLayout BackgroundColor="#F5F5F5" Spacing="0">
 
-            <Grid BackgroundColor="#E65100"
-              Padding="15,10">
+                <!-- BARRA SUPERIOR -->
+                <Grid BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="Auto,*,Auto">
 
-                <Image
-                Source="logo_mueve.png"
-                HeightRequest="40"
-                HorizontalOptions="Start" />
+                    <Label
+                        Grid.Column="0"
+                        Text="&#9776;"
+                        FontSize="26"
+                        TextColor="White"
+                        VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="AbrirMenu_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
 
-                <Label
-Grid.Column="1"
-x:Name="lblBienvenida"
-FontSize="18"
-FontAttributes="Bold"
-TextColor="White"
-HorizontalOptions="End"
-VerticalOptions="Center"/>
+                    <Image
+                        Grid.Column="1"
+                        Source="logo_mueve.png"
+                        HeightRequest="40"
+                        HorizontalOptions="Center"/>
 
-            </Grid>
-
-            <!-- MAPA -->
-
-            <Grid HeightRequest="180"
-              BackgroundColor="#E0E0E0">
-
-                <Image
-                Source="mock_map.png"
-                Aspect="AspectFill" />
-
-                <Button
-                Text="Ver Mapa"
-                BackgroundColor="#E65100"
-                TextColor="White"
-                FontAttributes="Bold"
-                WidthRequest="160"
-                HeightRequest="50"
-                CornerRadius="15"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                Clicked="VerMapa_Clicked"/>
-
-            </Grid>
-
-            <!-- MENÚ -->
-
-            <Grid BackgroundColor="White"
-              Padding="15"
-              ColumnDefinitions="*,*,*,*">
-
-                <VerticalStackLayout
-    Grid.Column="0">
-                    <Image Source="home_orange_icon.png"
-                       HeightRequest="24"/>
-                    <Label Text="Inicio"
-                       FontSize="11"
-                           TextColor="Black"
-                       HorizontalTextAlignment="Center"/>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Grid.Column="1">
-                    <Image Source="trips_icon.png"
-                       HeightRequest="24"/>
-                    <Label Text="Viajes"
-                       FontSize="11"
-                           TextColor="Black"
-                       HorizontalTextAlignment="Center"/>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Grid.Column="2">
-                    <Image Source="promos_icon.png"
-                       HeightRequest="24"/>
-                    <Label Text="Promos"
-                       FontSize="11"
-                           TextColor="Black"
-                       HorizontalTextAlignment="Center"/>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Grid.Column="3">
-
-                    <VerticalStackLayout.GestureRecognizers>
-                        <TapGestureRecognizer
-                        Tapped="CerrarSesion_Tapped"/>
-                    </VerticalStackLayout.GestureRecognizers>
-
-                    <Image Source="logout_icon.png"
-                       HeightRequest="24"/>
-
-                    <Label Text="Salir"
-                       FontSize="11"
-                       TextColor="Black"
-                       HorizontalTextAlignment="Center"/>
-
-                </VerticalStackLayout>
-
-            </Grid>
-
-            <!-- CONTENIDO -->
-
-            <VerticalStackLayout
-            Padding="20"
-            Spacing="15">
-
-                <Border
-            StrokeShape="RoundRectangle 10"
-            StrokeThickness="1"
-            Stroke="#E0E0E0"
-            Padding="15"
-            BackgroundColor="#FAFAFA">
-
-                    <VerticalStackLayout Spacing="8">
-
-                        <Label
-        Text="Origen"
-        TextColor="Gray"
-        FontSize="12"/>
-
-                        <Label
-        Text="Av. Reforma 222"
-        FontAttributes="Bold"
-        TextColor="Black"/>
-
-                        <Label
-        Text="Destino"
-        TextColor="Gray"
-        FontSize="12"/>
-
-                        <Label
-        Text="Roma Norte"
-        FontAttributes="Bold"
-        TextColor="Black"/>
-
-                    </VerticalStackLayout>
-                </Border>
-
-                <Label
-    Text="Selecciona tu Vehículo"
-    FontSize="16"
-    FontAttributes="Bold"/>
-
-                <CollectionView
-    ItemsSource="{Binding Vehiculos}"
-    HeightRequest="180"
-    SelectionMode="Single"
-    SelectedItem="{Binding VehiculoSeleccionado}"
-    SelectionChanged="Vehiculos_SelectionChanged">
-
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout
-            Orientation="Horizontal"
-            ItemSpacing="12"/>
-                    </CollectionView.ItemsLayout>
-
-                    <CollectionView.ItemTemplate>
-
-                        <DataTemplate>
-
-                            <Border
-                Stroke="#E65100"
-                StrokeThickness="2"
-                StrokeShape="RoundRectangle 10"
-                WidthRequest="140"
-                Padding="10">
-
-                                <VisualStateManager.VisualStateGroups>
-                                    <VisualStateGroup Name="CommonStates">
-                                        <VisualState Name="Normal">
-                                            <VisualState.Setters>
-                                                <Setter Property="Stroke" Value="#E65100" />
-                                                <Setter Property="StrokeThickness" Value="2" />
-                                                <Setter Property="BackgroundColor" Value="#FFFFFF" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                        <VisualState Name="Selected">
-                                            <VisualState.Setters>
-                                                <Setter Property="Stroke" Value="#FFB74D" />
-                                                <Setter Property="StrokeThickness" Value="3" />
-                                                <Setter Property="BackgroundColor" Value="#FFF3E0" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateManager.VisualStateGroups>
-
-                                <VerticalStackLayout>
-
-                                    <Image
-                        Source="{Binding Imagen}"
-                        HeightRequest="60"/>
-
-                                    <Label
-                        Text="{Binding Nombre}"
+                    <Label
+                        Grid.Column="2"
+                        x:Name="lblBienvenida"
+                        FontSize="14"
                         FontAttributes="Bold"
-                        TextColor="Black"
-                        HorizontalTextAlignment="Center"/>
+                        TextColor="White"
+                        VerticalOptions="Center"/>
 
-                                    <Label
-                        Text="{Binding Precio, StringFormat='${0} MXN'}"
-                        TextColor="#E65100"
-                        HorizontalTextAlignment="Center"/>
+                </Grid>
 
-                                </VerticalStackLayout>
+                <!-- MAPA -->
+                <Grid HeightRequest="180" BackgroundColor="#E0E0E0">
 
-                            </Border>
+                    <Image Source="mock_map.png" Aspect="AspectFill" />
 
-                        </DataTemplate>
+                    <Button
+                        Text="Ver Mapa"
+                        BackgroundColor="#E65100"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        WidthRequest="160"
+                        HeightRequest="50"
+                        CornerRadius="15"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        Clicked="VerMapa_Clicked"/>
 
-                    </CollectionView.ItemTemplate>
+                </Grid>
 
-                </CollectionView>
+                <!-- CONTENIDO -->
+                <VerticalStackLayout Padding="20" Spacing="15">
 
-                <Button
-    Text="{Binding TextoBotonConfirmar}"
-    Command="{Binding ConfirmarFleteCommand}"
-    BackgroundColor="#E65100"
-    TextColor="White"/>
+                    <Border
+                        StrokeShape="RoundRectangle 10"
+                        StrokeThickness="1"
+                        Stroke="#E0E0E0"
+                        Padding="15"
+                        BackgroundColor="#FAFAFA">
 
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Origen" TextColor="Gray" FontSize="12"/>
+                            <Label Text="Av. Reforma 222" FontAttributes="Bold" TextColor="Black"/>
+                            <Label Text="Destino" TextColor="Gray" FontSize="12"/>
+                            <Label Text="Roma Norte" FontAttributes="Bold" TextColor="Black"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Label Text="Selecciona tu Vehículo" FontSize="16" FontAttributes="Bold"/>
+
+                    <CollectionView
+                        ItemsSource="{Binding Vehiculos}"
+                        HeightRequest="180"
+                        SelectionMode="Single"
+                        SelectedItem="{Binding VehiculoSeleccionado}"
+                        SelectionChanged="Vehiculos_SelectionChanged">
+
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12"/>
+                        </CollectionView.ItemsLayout>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    Stroke="#E65100"
+                                    StrokeThickness="2"
+                                    StrokeShape="RoundRectangle 10"
+                                    WidthRequest="140"
+                                    Padding="10">
+
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup Name="CommonStates">
+                                            <VisualState Name="Normal">
+                                                <VisualState.Setters>
+                                                    <Setter Property="Stroke" Value="#E65100" />
+                                                    <Setter Property="StrokeThickness" Value="2" />
+                                                    <Setter Property="BackgroundColor" Value="#FFFFFF" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                            <VisualState Name="Selected">
+                                                <VisualState.Setters>
+                                                    <Setter Property="Stroke" Value="#FFB74D" />
+                                                    <Setter Property="StrokeThickness" Value="3" />
+                                                    <Setter Property="BackgroundColor" Value="#FFF3E0" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={x:Reference PaginaPrincipal}, Path=BindingContext.SeleccionarVehiculoCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+
+                                    <VerticalStackLayout>
+                                        <Image Source="{Binding Imagen}" HeightRequest="60"/>
+                                        <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center"/>
+                                        <Label Text="{Binding Precio, StringFormat='${0} MXN'}" TextColor="#E65100" HorizontalTextAlignment="Center"/>
+                                    </VerticalStackLayout>
+
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+
+                    </CollectionView>
+
+                    <Button
+                        Text="{Binding TextoBotonConfirmar}"
+                        Command="{Binding ConfirmarFleteCommand}"
+                        BackgroundColor="#E65100"
+                        TextColor="White"/>
+
+                </VerticalStackLayout>
 
             </VerticalStackLayout>
 
-        </VerticalStackLayout>
+        </ScrollView>
 
-    </ScrollView>
+        <!-- OVERLAY: FONDO OSCURO -->
+        <BoxView
+            x:Name="fondoOscuro"
+            BackgroundColor="#80000000"
+            IsVisible="False">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="CerrarMenu_Tapped"/>
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- OVERLAY: PANEL DEL MENÚ -->
+        <Frame
+            x:Name="panelMenu"
+            IsVisible="False"
+            BackgroundColor="White"
+            CornerRadius="0"
+            Padding="0"
+            WidthRequest="230"
+            HorizontalOptions="Start"
+            VerticalOptions="Fill">
+
+            <VerticalStackLayout Padding="20" Spacing="0">
+
+                <Label Text="MUEVE" FontSize="22" FontAttributes="Bold" TextColor="#E65100" Margin="0,10,0,30"/>
+
+                <VerticalStackLayout Spacing="25">
+
+                    <Label Text="Inicio" FontSize="16" TextColor="Black">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CerrarMenu_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <Label Text="Viajes" FontSize="16" TextColor="Black">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="Viajes_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <Label Text="Promos" FontSize="16" TextColor="Black">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="Promos_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <BoxView HeightRequest="1" BackgroundColor="#E0E0E0" Margin="0,10"/>
+
+                    <Label Text="Cerrar sesión" FontSize="16" TextColor="#E65100" FontAttributes="Bold">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CerrarSesion_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+
+        </Frame>
+
+    </Grid>
 
 </ContentPage>

@@ -91,23 +91,22 @@
                 </Grid>
 
             </Frame>
-
             <!-- VIAJE -->
             <Frame
-                Margin="15,0"
-                CornerRadius="12"
-                BackgroundColor="White">    
+    Margin="15,0"
+    CornerRadius="12"
+    BackgroundColor="White">
 
                 <VerticalStackLayout Spacing="0">
 
                     <VerticalStackLayout x:Name="contenedorViaje" Spacing="10" IsVisible="False">
 
                         <Label
-                            x:Name="lblTituloViaje"
-                            Text="Solicitud de Viaje"
-                            FontAttributes="Bold"
-                            FontSize="18"
-                            TextColor="#E65100"/>
+                x:Name="lblTituloViaje"
+                Text="Solicitud de Viaje"
+                FontAttributes="Bold"
+                FontSize="18"
+                TextColor="#E65100"/>
 
                         <Label x:Name="lblCliente" TextColor="Black"/>
                         <Label x:Name="lblOrigen" TextColor="Black"/>
@@ -115,41 +114,41 @@
                         <Label x:Name="lblVehiculo" TextColor="Black"/>
 
                         <Label
-                            x:Name="lblPrecio"
-                            FontSize="22"
-                            FontAttributes="Bold"
-                            TextColor="#E65100"/>
+                x:Name="lblPrecio"
+                FontSize="22"
+                FontAttributes="Bold"
+                TextColor="#E65100"/>
 
                         <Button
-                            x:Name="btnAccion"
-                            Text="ACEPTAR VIAJE"
-                            BackgroundColor="#E65100"
-                            TextColor="White"
-                            CornerRadius="12"
-                            Clicked="AceptarViaje_Clicked"/>
+                x:Name="btnAccion"
+                Text="ACEPTAR VIAJE"
+                BackgroundColor="#E65100"
+                TextColor="White"
+                CornerRadius="12"
+                Clicked="AceptarViaje_Clicked"/>
 
                     </VerticalStackLayout>
 
                     <Label
-                        x:Name="lblSinViajes"
-                        Text="Buscando viajes disponibles..."
-                        TextColor="Gray"
-                        HorizontalOptions="Center"
-                        Margin="0,20"/>
+            x:Name="lblSinViajes"
+            Text="Buscando viajes disponibles..."
+            TextColor="Gray"
+            HorizontalOptions="Center"
+            Margin="0,20"/>
+
+                    <Button
+            x:Name="btnCompletarPerfil"
+            Text="Completar perfil de conductor"
+            BackgroundColor="#E65100"
+            TextColor="White"
+            CornerRadius="12"
+            Margin="20,0,20,20"
+            IsVisible="False"
+            Clicked="CompletarPerfil_Clicked"/>
 
                 </VerticalStackLayout>
-                <Button
-                    x:Name="btnCompletarPerfil"
-                    Text="Completar perfil de conductor"
-                    BackgroundColor="#E65100"
-                    TextColor="White"
-                    CornerRadius="12"
-                    Margin="20,0,20,20"
-                    IsVisible="False"
-                    Clicked="CompletarPerfil_Clicked"/>
 
             </Frame>
-
         </VerticalStackLayout>
 
     </ScrollView>
