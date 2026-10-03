@@ -24,8 +24,6 @@ namespace AppFletesMueve
 
             builder.Services.AddSingleton<UsuarioService>();
             builder.Services.AddSingleton<TransporteService>();
-            // Registrar MAUI Maps
-            builder.Services.AddMauiMaps();
             builder.Services.AddTransient<RegistroPage>();
 
             return builder.Build();
