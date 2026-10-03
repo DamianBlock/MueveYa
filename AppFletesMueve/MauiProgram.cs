@@ -11,6 +11,7 @@ namespace AppFletesMueve
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiMaps()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -23,6 +24,8 @@ namespace AppFletesMueve
 
             builder.Services.AddSingleton<UsuarioService>();
             builder.Services.AddSingleton<TransporteService>();
+            // Registrar MAUI Maps
+            builder.Services.AddMauiMaps();
             builder.Services.AddTransient<RegistroPage>();
 
             return builder.Build();

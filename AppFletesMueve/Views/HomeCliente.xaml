@@ -1,6 +1,7 @@
-﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AppFletesMueve.MainPage"
+             xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+             x:Class="AppFletesMueve.Views.HomeCliente"
              x:Name="PaginaPrincipal"
              BackgroundColor="#F5F5F5"
              NavigationPage.HasNavigationBar="False">
@@ -43,21 +44,19 @@
                 </Grid>
 
                 <!-- MAPA -->
-                <Grid HeightRequest="180" BackgroundColor="#E0E0E0">
+                <Grid HeightRequest="220" BackgroundColor="#E0E0E0">
 
-                    <Image Source="mock_map.png" Aspect="AspectFill" />
+                    <maps:Map x:Name="mapCliente" HeightRequest="220" />
 
-                    <Button
-                        Text="Ver Mapa"
-                        BackgroundColor="#E65100"
-                        TextColor="White"
-                        FontAttributes="Bold"
-                        WidthRequest="160"
-                        HeightRequest="50"
-                        CornerRadius="15"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"
-                        Clicked="VerMapa_Clicked"/>
+                    <Grid HorizontalOptions="Fill" VerticalOptions="Start" Padding="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Entry x:Name="txtDestino" Placeholder="Buscar destino..." Grid.Column="0" BackgroundColor="#FFFFFF" />
+                        <Button Text="Buscar" Grid.Column="1" Clicked="BuscarDestino_Clicked" BackgroundColor="#E65100" TextColor="White" />
+                    </Grid>
 
                 </Grid>
 
@@ -130,6 +129,7 @@
                                         <Image Source="{Binding Imagen}" HeightRequest="60"/>
                                         <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center"/>
                                         <Label Text="{Binding Precio, StringFormat='${0} MXN'}" TextColor="#E65100" HorizontalTextAlignment="Center"/>
+                                        <Button Text="Solicitar" BackgroundColor="#E65100" TextColor="White" CornerRadius="8" CommandParameter="{Binding .}" Clicked="Solicitar_Clicked"/>
                                     </VerticalStackLayout>
 
                                 </Border>

@@ -1,11 +1,15 @@
 using AppFletesMueve.Models;
 using AppFletesMueve.Services;
+using Microsoft.Maui.Controls.Maps;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AppFletesMueve.Views;
 
 public partial class HomeConductor : ContentPage
 {
     private readonly TransporteService _transporteService = new();
+    private HubConnection? _hub;
 
     private int? _conductorId;
     private int? _vehiculoIdPropio;
@@ -26,6 +30,124 @@ public partial class HomeConductor : ContentPage
     {
         base.OnAppearing();
         await CargarEstadoAsync();
+
+        // Inicializar SignalR para recibir solicitudes en tiempo real
+        try
+        {
+            if (_hub == null)
+            {
+                _hub = new HubConnectionBuilder()
+                    .WithUrl("https://tu-servidor/api/hubs/solicitudes")
+                    .WithAutomaticReconnect()
+                    .Build();
+
+                _hub.On<SolicitudFleteDto>("NuevaSolicitud", solicitud =>
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        try
+                        {
+                            var pin = new Pin
+                            {
+                                Label = $"${solicitud.Precio:0.00} - {solicitud.DireccionOrigen}",
+                                Location = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen)
+                            };
+
+                            pin.Clicked += async (s, e) =>
+                            {
+                                bool aceptar = await DisplayAlert("Solicitud", $"Aceptar viaje por ${solicitud.Precio:0.00}?", "Sí", "No");
+                                if (aceptar)
+                                {
+                                    try
+                                    {
+                                        var ok = await _transporteService.AceptarSolicitudAsync(solicitud.SolicitudFleteId, _conductorId ?? 0, _vehiculoIdPropio ?? 0);
+                                        await DisplayAlert("MUEVE", ok ? "Viaje aceptado." : "No se pudo aceptar.", "Aceptar");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        await DisplayAlert("MUEVE", "Error al aceptar la solicitud.", "Aceptar");
+                                        System.Diagnostics.Debug.WriteLine(ex);
+                                    }
+                                }
+                            };
+
+                            mapConductor.Pins.Add(pin);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine(ex);
+                        }
+                    });
+                });
+
+                // Suscribirse también al evento local para pruebas sin servidor
+                TransporteService.SolicitudCreada += OnSolicitudCreadaLocal;
+            }
+
+            await _hub.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error SignalR: {ex}");
+        }
+    }
+
+    protected override async void OnDisappearing()
+    {
+        base.OnDisappearing();
+        try
+        {
+            if (_hub != null)
+            {
+                await _hub.StopAsync();
+                await _hub.DisposeAsync();
+                _hub = null;
+            }
+            TransporteService.SolicitudCreada -= OnSolicitudCreadaLocal;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error stopping hub: {ex}");
+        }
+    }
+
+    private void OnSolicitudCreadaLocal(SolicitudFleteDto solicitud)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            try
+            {
+                var pin = new Pin
+                {
+                    Label = $"${solicitud.Precio:0.00} - {solicitud.ClienteNombre}",
+                    Location = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen)
+                };
+
+                pin.Clicked += async (s, e) =>
+                {
+                    bool aceptar = await DisplayAlert("Solicitud", $"Aceptar viaje por ${solicitud.Precio:0.00}?", "Sí", "No");
+                    if (aceptar)
+                    {
+                        try
+                        {
+                            var resultado = await _transporteService.AceptarSolicitudAsync(solicitud.SolicitudFleteId, _conductorId ?? 0, _vehiculoIdPropio ?? 0);
+                            await DisplayAlert("MUEVE", resultado ? "Viaje aceptado." : "No se pudo aceptar.", "Aceptar");
+                        }
+                        catch (Exception ex)
+                        {
+                            await DisplayAlert("MUEVE", "Error al aceptar la solicitud.", "Aceptar");
+                            System.Diagnostics.Debug.WriteLine(ex);
+                        }
+                    }
+                };
+
+                mapConductor.Pins.Add(pin);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex);
+            }
+        });
     }
 
     private async Task CargarEstadoAsync()
@@ -72,7 +194,6 @@ public partial class HomeConductor : ContentPage
         contenedorViaje.IsVisible = false;
         lblSinViajes.IsVisible = true;
         lblSinViajes.Text = mensaje;
-        // btnCompletarPerfil se activa explícitamente solo cuando falta el perfil
     }
 
     private void MostrarViajePendiente(SolicitudFleteDto s)
@@ -110,17 +231,18 @@ public partial class HomeConductor : ContentPage
 
         btnAccion.Text = "FINALIZAR VIAJE";
     }
+
     private async void CompletarPerfil_Clicked(object sender, EventArgs e)
     {
         await Navigation.PushAsync(new CompletarPerfilConductorPage());
     }
+
     private async void AceptarViaje_Clicked(object sender, EventArgs e)
     {
         try
         {
             if (_solicitudEnCurso != null)
             {
-                // El botón dice "FINALIZAR VIAJE"
                 var resultado = await _transporteService.CompletarSolicitud(_solicitudEnCurso.SolicitudFleteId);
                 await DisplayAlert("MUEVE",
                     resultado != null ? "Viaje finalizado correctamente." : "No se pudo finalizar el viaje.",
@@ -128,12 +250,11 @@ public partial class HomeConductor : ContentPage
             }
             else if (_solicitudPendiente != null && _conductorId.HasValue && _vehiculoIdPropio.HasValue)
             {
-                // El botón dice "ACEPTAR VIAJE"
-                var resultado = await _transporteService.AceptarSolicitud(
+                var ok = await _transporteService.AceptarSolicitudAsync(
                     _solicitudPendiente.SolicitudFleteId, _conductorId.Value, _vehiculoIdPropio.Value);
 
                 await DisplayAlert("MUEVE",
-                    resultado != null ? "Viaje aceptado correctamente." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
+                    ok ? "Viaje aceptado correctamente." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
                     "Aceptar");
             }
         }

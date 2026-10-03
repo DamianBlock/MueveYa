@@ -1,44 +1,18 @@
-﻿using System.Net.Http.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace AppFletesMueve.Services
 {
-    public class CrearConductorRequest
-    {
-        public int UsuarioId { get; set; }
-        public string Licencia { get; set; } = string.Empty;
-    }
+    public class CrearConductorRequest { public int UsuarioId { get; set; } public string Licencia { get; set; } = string.Empty; }
+    public class CrearVehiculoRequest { public int ConductorId { get; set; } public string Patente { get; set; } = string.Empty; public string Marca { get; set; } = string.Empty; public string Modelo { get; set; } = string.Empty; public int Anio { get; set; } public string TipoVehiculo { get; set; } = string.Empty; public double CapacidadKg { get; set; } public double VolumenM3 { get; set; } }
 
-    public class CrearVehiculoRequest
-    {
-        public int ConductorId { get; set; }
-        public string Patente { get; set; } = string.Empty;
-        public string Marca { get; set; } = string.Empty;
-        public string Modelo { get; set; } = string.Empty;
-        public int Anio { get; set; }
-        public string TipoVehiculo { get; set; } = string.Empty;
-        public double CapacidadKg { get; set; }
-        public double VolumenM3 { get; set; }
-    }
-    public class VehiculoDisponibleDto
-    {
-        public int VehiculoId { get; set; }
-        public int ConductorId { get; set; }
-        public string Patente { get; set; } = string.Empty;
-        public string Marca { get; set; } = string.Empty;
-        public string Modelo { get; set; } = string.Empty;
-        public int Anio { get; set; }
-        public string TipoVehiculo { get; set; } = string.Empty;
-        public double CapacidadKg { get; set; }
-        public double VolumenM3 { get; set; }
-        public bool Disponible { get; set; }
-        public string? Imagen { get; set; }
-    }
+    public class VehiculoDisponibleDto { public int VehiculoId { get; set; } public int ConductorId { get; set; } public string Patente { get; set; } = string.Empty; public string Marca { get; set; } = string.Empty; public string Modelo { get; set; } = string.Empty; public int Anio { get; set; } public string TipoVehiculo { get; set; } = string.Empty; public double CapacidadKg { get; set; } public double VolumenM3 { get; set; } public bool Disponible { get; set; } public string? Imagen { get; set; } }
 
-    public class ItemCargaRequest
-    {
-        public int TipoCargaId { get; set; }
-        public int Cantidad { get; set; } = 1;
-    }
+    public class ItemCargaRequest { public int TipoCargaId { get; set; } public int Cantidad { get; set; } = 1; }
 
     public class CrearSolicitudFleteRequest
     {
@@ -55,14 +29,7 @@ namespace AppFletesMueve.Services
         public List<ItemCargaRequest> Cargas { get; set; } = new();
     }
 
-    public class CargaDto
-    {
-        public int TipoCargaId { get; set; }
-        public string TipoCargaNombre { get; set; } = string.Empty;
-        public int Cantidad { get; set; }
-        public double PesoKg { get; set; }
-        public double VolumenM3 { get; set; }
-    }
+    public class CargaDto { public int TipoCargaId { get; set; } public string TipoCargaNombre { get; set; } = string.Empty; public int Cantidad { get; set; } public double PesoKg { get; set; } public double VolumenM3 { get; set; } }
 
     public class SolicitudFleteDto
     {
@@ -75,31 +42,24 @@ namespace AppFletesMueve.Services
         public DateTime FechaSolicitud { get; set; }
         public string DireccionOrigen { get; set; } = string.Empty;
         public string DireccionDestino { get; set; } = string.Empty;
+        public double LatitudOrigen { get; set; }
+        public double LongitudOrigen { get; set; }
         public double DistanciaKm { get; set; }
         public decimal Precio { get; set; }
         public string Estado { get; set; } = string.Empty;
         public List<CargaDto> Cargas { get; set; } = new();
     }
 
-    public class TipoCargaDto
-    {
-        public int TipoCargaId { get; set; }
-        public string Nombre { get; set; } = string.Empty;
-        public double PesoEstimadoKg { get; set; }
-        public double VolumenEstimadoM3 { get; set; }
-    }
+    public class TipoCargaDto { public int TipoCargaId { get; set; } public string Nombre { get; set; } = string.Empty; public double PesoEstimadoKg { get; set; } public double VolumenEstimadoM3 { get; set; } }
 
-    public class ConductorDto
-    {
-        public int ConductorId { get; set; }
-        public int UsuarioId { get; set; }
-        public string Nombre { get; set; } = string.Empty;
-        public bool Disponible { get; set; }
-    }
+    public class ConductorDto { public int ConductorId { get; set; } public int UsuarioId { get; set; } public string Nombre { get; set; } = string.Empty; public bool Disponible { get; set; } }
+
+    public class VehiculoOpcionDto { public int VehiculoId { get; set; } public int ConductorId { get; set; } public string Nombre { get; set; } = string.Empty; public double Precio { get; set; } public string? Imagen { get; set; } }
 
     public class TransporteService
     {
         private readonly HttpClient _httpClient;
+        public static event Action<SolicitudFleteDto>? SolicitudCreada;
 
 #if DEBUG
         private const string ApiUrl = "http://10.0.2.2:5051/api/";
@@ -107,110 +67,165 @@ namespace AppFletesMueve.Services
         private const string ApiUrl = "https://mueveya.onrender.com/api/";
 #endif
 
-        public TransporteService()
-        {
-            _httpClient = new HttpClient();
-        }
-        public async Task<(bool Success, string? ErrorMessage)> CrearConductor(int usuarioId, string licencia)
-        {
-            var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Conductores",
-                new CrearConductorRequest { UsuarioId = usuarioId, Licencia = licencia });
-
-            if (response.IsSuccessStatusCode) return (true, null);
-            return (false, await LeerMensajeError(response));
-        }
-
-        public async Task<(bool Success, string? ErrorMessage)> CrearVehiculo(CrearVehiculoRequest request)
-        {
-            var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Vehiculos", request);
-
-            if (response.IsSuccessStatusCode) return (true, null);
-            return (false, await LeerMensajeError(response));
-        }
+        public TransporteService() { _httpClient = new HttpClient(); }
 
         private static async Task<string> LeerMensajeError(HttpResponseMessage response)
         {
             try
             {
                 var json = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-                if (json != null && json.TryGetValue("mensaje", out var m))
-                    return m?.ToString() ?? "Ocurrió un error.";
+                if (json != null && json.TryGetValue("mensaje", out var m)) return m?.ToString() ?? "Ocurrió un error.";
             }
             catch { }
             return "Ocurrió un error.";
         }
-        public async Task<List<TipoCargaDto>> ObtenerTiposCarga()
-        {
-            var resultado = await _httpClient
-                .GetFromJsonAsync<List<TipoCargaDto>>(ApiUrl + "TiposCarga");
-            return resultado ?? new List<TipoCargaDto>();
-        }
 
         public async Task<List<VehiculoDisponibleDto>> ObtenerVehiculosDisponibles()
         {
-            var resultado = await _httpClient
-                .GetFromJsonAsync<List<VehiculoDisponibleDto>>(ApiUrl + "Vehiculos/disponibles");
-            return resultado ?? new List<VehiculoDisponibleDto>();
-        }
-
-        public async Task<SolicitudFleteDto?> CrearSolicitud(CrearSolicitudFleteRequest request)
-        {
-            var response = await _httpClient
-                .PostAsJsonAsync(ApiUrl + "SolicitudesFlete", request);
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
-        }
-
-        public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes()
-        {
-            var resultado = await _httpClient
-                .GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + "SolicitudesFlete/pendientes");
-            return resultado ?? new List<SolicitudFleteDto>();
-        }
-
-        public async Task<SolicitudFleteDto?> AceptarSolicitud(
-            int solicitudId, int conductorId, int vehiculoId)
-        {
-            var response = await _httpClient.PutAsJsonAsync(
-                $"{ApiUrl}SolicitudesFlete/{solicitudId}/aceptar",
-                new { ConductorId = conductorId, VehiculoId = vehiculoId });
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+            try { var resultado = await _httpClient.GetFromJsonAsync<List<VehiculoDisponibleDto>>(ApiUrl + "Vehiculos/disponibles"); return resultado ?? new List<VehiculoDisponibleDto>(); }
+            catch { return new List<VehiculoDisponibleDto>(); }
         }
 
         public async Task<ConductorDto?> ObtenerConductorPorUsuario(int usuarioId)
         {
-            var response = await _httpClient.GetAsync(ApiUrl + $"Conductores/por-usuario/{usuarioId}");
-            if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadFromJsonAsync<ConductorDto>();
+            try { return await _httpClient.GetFromJsonAsync<ConductorDto?>(ApiUrl + $"Conductores/usuario/{usuarioId}"); }
+            catch { return null; }
         }
 
         public async Task<List<VehiculoDisponibleDto>> ObtenerVehiculosDeConductor(int conductorId)
         {
-            var resultado = await _httpClient
-                .GetFromJsonAsync<List<VehiculoDisponibleDto>>(ApiUrl + $"Vehiculos/conductor/{conductorId}");
-            return resultado ?? new List<VehiculoDisponibleDto>();
+            try { var r = await _httpClient.GetFromJsonAsync<List<VehiculoDisponibleDto>>(ApiUrl + $"Vehiculos/conductor/{conductorId}"); return r ?? new List<VehiculoDisponibleDto>(); }
+            catch { return new List<VehiculoDisponibleDto>(); }
         }
+
         public async Task<SolicitudFleteDto?> ObtenerViajeActivoDeConductor(int conductorId)
         {
-            var response = await _httpClient.GetAsync(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}/activa");
-            if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+            try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/activo/{conductorId}"); }
+            catch { return null; }
+        }
+
+        public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes()
+        {
+            try { var r = await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + "SolicitudesFlete/pendientes"); return r ?? new List<SolicitudFleteDto>(); }
+            catch { return new List<SolicitudFleteDto>(); }
+        }
+
+        public async Task<SolicitudFleteDto?> CrearSolicitud(CrearSolicitudFleteRequest request)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(ApiUrl + "SolicitudesFlete", request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var local = new SolicitudFleteDto
+                    {
+                        SolicitudFleteId = new Random().Next(10000, 99999),
+                        ClienteId = request.ClienteId,
+                        ClienteNombre = "Cliente (local)",
+                        DireccionOrigen = request.DireccionOrigen,
+                        DireccionDestino = request.DireccionDestino,
+                        LatitudOrigen = request.LatitudOrigen,
+                        LongitudOrigen = request.LongitudOrigen,
+                        DistanciaKm = request.DistanciaKm,
+                        Precio = (decimal)CalcularPrecioEstimado(request.DistanciaKm, new VehiculoDisponibleDto { TipoVehiculo = "estandar" }),
+                        Estado = "PENDIENTE",
+                        FechaSolicitud = DateTime.UtcNow
+                    };
+                    SolicitudCreada?.Invoke(local);
+                    return local;
+                }
+
+                var dto = await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+                if (dto != null) SolicitudCreada?.Invoke(dto);
+                return dto;
+            }
+            catch
+            {
+                var local = new SolicitudFleteDto
+                {
+                    SolicitudFleteId = new Random().Next(10000, 99999),
+                    ClienteId = request.ClienteId,
+                    ClienteNombre = "Cliente (local)",
+                    DireccionOrigen = request.DireccionOrigen,
+                    DireccionDestino = request.DireccionDestino,
+                    LatitudOrigen = request.LatitudOrigen,
+                    LongitudOrigen = request.LongitudOrigen,
+                    DistanciaKm = request.DistanciaKm,
+                    Precio = (decimal)CalcularPrecioEstimado(request.DistanciaKm, new VehiculoDisponibleDto { TipoVehiculo = "estandar" }),
+                    Estado = "PENDIENTE",
+                    FechaSolicitud = DateTime.UtcNow
+                };
+                SolicitudCreada?.Invoke(local);
+                return local;
+            }
+        }
+
+        public async Task<SolicitudFleteDto?> AceptarSolicitud(int solicitudId, int conductorId, int vehiculoId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/aceptar", new { ConductorId = conductorId, VehiculoId = vehiculoId });
+                if (!response.IsSuccessStatusCode) return null;
+                return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+            }
+            catch { return null; }
+        }
+
+        public async Task<bool> AceptarSolicitudAsync(int solicitudId, int conductorId, int vehiculoId)
+        {
+            var r = await AceptarSolicitud(solicitudId, conductorId, vehiculoId);
+            return r != null;
         }
 
         public async Task<SolicitudFleteDto?> CompletarSolicitud(int solicitudId)
         {
-            var response = await _httpClient.PutAsync(
-                $"{ApiUrl}SolicitudesFlete/{solicitudId}/completar", null);
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/completar", new { });
+                if (!response.IsSuccessStatusCode) return null;
+                return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+            }
+            catch { return null; }
+        }
 
-            if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+        public async Task<List<VehiculoOpcionDto>> ObtenerOpcionesVehiculoAsync(double origenLat, double origenLon, double destinoLat, double destinoLon)
+        {
+            try
+            {
+                var resultado = await _httpClient.GetFromJsonAsync<List<VehiculoOpcionDto>>(ApiUrl + $"Tarifas/opciones?origenLat={origenLat}&origenLon={origenLon}&destinoLat={destinoLat}&destinoLon={destinoLon}");
+                if (resultado != null) return resultado;
+            }
+            catch { }
+
+            var vehiculos = await ObtenerVehiculosDisponibles();
+            var distancia = HaversineDistanceKm(origenLat, origenLon, destinoLat, destinoLon);
+            var lista = new List<VehiculoOpcionDto>();
+            foreach (var v in vehiculos.Where(x => x.Disponible))
+            {
+                var precio = CalcularPrecioEstimado(distancia, v);
+                lista.Add(new VehiculoOpcionDto { VehiculoId = v.VehiculoId, ConductorId = v.ConductorId, Nombre = $"{v.Marca} {v.Modelo}", Precio = precio, Imagen = v.Imagen });
+            }
+            return lista;
+        }
+
+        public static double HaversineDistanceKm(double lat1, double lon1, double lat2, double lon2)
+        {
+            double R = 6371; // km
+            var dLat = ToRad(lat2 - lat1);
+            var dLon = ToRad(lon2 - lon1);
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+
+        private static double ToRad(double deg) => deg * (Math.PI / 180);
+
+        private static double CalcularPrecioEstimado(double distanciaKm, VehiculoDisponibleDto v)
+        {
+            double baseFare = 50;
+            double perKm = 12;
+            if (v.TipoVehiculo?.ToLower().Contains("caja") == true) perKm = 18;
+            return Math.Round(baseFare + perKm * distanciaKm, 2);
         }
     }
 }

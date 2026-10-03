@@ -3,6 +3,7 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
     x:Class="AppFletesMueve.Views.HomeConductor"
     BackgroundColor="#F5F5F5"
     NavigationPage.HasNavigationBar="False">
@@ -75,10 +76,7 @@
                 Padding="0">
 
                 <Grid HeightRequest="220">
-
-                    <Image
-                        Source="mock_map.png"
-                        Aspect="AspectFill"/>
+                    <maps:Map x:Name="mapConductor" />
 
                     <Label
                         Text="Ubicación del Cliente"
