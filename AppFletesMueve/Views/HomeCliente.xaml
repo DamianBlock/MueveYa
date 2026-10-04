@@ -48,19 +48,7 @@
                 <!-- MAPA -->
                 <Grid HeightRequest="220" BackgroundColor="#E0E0E0">
 
-                    <maps:Map x:Name="mapCliente" HeightRequest="220" IsShowingUser="True" />
-
-                    <ImageButton
-                        Source="iconobrujula.png"
-                        WidthRequest="48"
-                        HeightRequest="48"
-                        CornerRadius="24"
-                        BackgroundColor="White"
-                        Padding="10"
-                        HorizontalOptions="End"
-                        VerticalOptions="End"
-                        Margin="0,0,12,12"
-                        Clicked="CentrarUbicacion_Clicked"/>
+                    <maps:Map x:Name="mapCliente" HeightRequest="220" IsShowingUser="True" />                 
 
                 </Grid>
 

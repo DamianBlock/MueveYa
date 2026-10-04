@@ -195,51 +195,7 @@ namespace AppFletesMueve.Views
             CerrarMenu_Tapped(sender, e);
             await DisplayAlert("MUEVE", "Sección de promos en construcción.", "Aceptar");
         }
-        private async void CentrarUbicacion_Clicked(object sender, EventArgs e)
-        {
-            var btn = sender as ImageButton;
-            if (btn != null) btn.IsEnabled = false;
-
-            try
-            {
-                var status = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
-                if (status != PermissionStatus.Granted)
-                    status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
-
-                if (status != PermissionStatus.Granted)
-                {
-                    await DisplayAlert("MUEVE", "Necesitás habilitar el permiso de ubicación.", "Aceptar");
-                    return;
-                }
-
-                var request = new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));
-                var location = await Geolocation.Default.GetLocationAsync(request);
-
-                if (location != null)
-                {
-                    Preferences.Set("UltimaLat", location.Latitude);
-                    Preferences.Set("UltimaLon", location.Longitude);
-
-                    mapCliente.MoveToRegion(
-                        MapSpan.FromCenterAndRadius(
-                            new Location(location.Latitude, location.Longitude),
-                            Distance.FromKilometers(1)));
-                }
-                else
-                {
-                    await DisplayAlert("MUEVE", "No se pudo obtener tu ubicación.", "Aceptar");
-                }
-            }
-            catch (Exception ex)
-            {
-                await DisplayAlert("MUEVE", "No se pudo acceder a la ubicación.", "Aceptar");
-                System.Diagnostics.Debug.WriteLine($"Error al centrar ubicación: {ex}");
-            }
-            finally
-            {
-                if (btn != null) btn.IsEnabled = true;
-            }
-        }
+       
         private async void Solicitar_Clicked(object sender, EventArgs e)
         {
             if (sender is Button btn && btn.CommandParameter is Models.VehiculoModel vm)
