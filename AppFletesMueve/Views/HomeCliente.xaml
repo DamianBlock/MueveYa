@@ -53,10 +53,41 @@
                 </Grid>
 
                 <!-- BÚSQUEDA DE DESTINO -->
-                <Grid Padding="15,10" ColumnDefinitions="*,Auto">
-                    <Entry x:Name="txtDestino" Placeholder="Buscar destino..." Grid.Column="0" BackgroundColor="#FFFFFF" />
-                    <Button Text="Buscar" Grid.Column="1" Clicked="BuscarDestino_Clicked" BackgroundColor="#E65100" TextColor="White" />
-                </Grid>
+                <VerticalStackLayout HorizontalOptions="Fill" VerticalOptions="Start" Padding="12" Spacing="4">
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Entry
+                                x:Name="txtDestino"
+                                Placeholder="Buscar destino..."
+                                Grid.Column="0"
+                                BackgroundColor="#FFFFFF"
+                                TextChanged="TxtDestino_TextChanged"/>
+                                            <Button
+                                Text="Buscar"
+                                Grid.Column="1"
+                                Clicked="BuscarDestino_Clicked"
+                                BackgroundColor="#E65100"
+                                TextColor="White"/>
+                                        </Grid>
+
+                                        <CollectionView
+                            x:Name="listaSugerencias"
+                            IsVisible="False"
+                            BackgroundColor="White"
+                            MaximumHeightRequest="180">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Padding="10,8">
+                                                        <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
+                                                        <Grid.GestureRecognizers>
+                                                            <TapGestureRecognizer Tapped="SugerenciaDestino_Tapped"/>
+                                                        </Grid.GestureRecognizers>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+
+                </VerticalStackLayout>
 
                 <!-- CONTENIDO -->
                 <VerticalStackLayout Padding="20" Spacing="15">

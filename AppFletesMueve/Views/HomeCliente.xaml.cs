@@ -14,6 +14,8 @@ namespace AppFletesMueve.Views
     public partial class HomeCliente : ContentPage
     {
         private readonly TransporteService _transporteService = new();
+        private readonly PlacesService _placesService = new();
+        private CancellationTokenSource? _debounceCts;
         private Location? _ultimoDestino;
 
         public HomeCliente()
@@ -79,7 +81,6 @@ namespace AppFletesMueve.Views
                 "Aquí se abrirá el mapa interactivo.",
                 "Aceptar");
         }
-
         private async void BuscarDestino_Clicked(object sender, EventArgs e)
         {
             var texto = txtDestino.Text?.Trim();
@@ -88,6 +89,8 @@ namespace AppFletesMueve.Views
                 await DisplayAlert("MUEVE", "Ingrese un destino.", "Aceptar");
                 return;
             }
+
+            listaSugerencias.IsVisible = false;
 
             try
             {
@@ -99,54 +102,7 @@ namespace AppFletesMueve.Views
                     return;
                 }
 
-                mapCliente.Pins.Clear();
-                _ultimoDestino = new Location(loc.Latitude, loc.Longitude);
-                mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(new Location(loc.Latitude, loc.Longitude), Distance.FromKilometers(5)));
-
-                // Intentar obtener opciones de vehículos y tarifas desde el servicio
-                try
-                {
-                    var origenLat = Preferences.Get("UltimaLat", 0.0);
-                    var origenLon = Preferences.Get("UltimaLon", 0.0);
-
-                    var opciones = await _transporteService.ObtenerOpcionesVehiculoAsync(origenLat, origenLon, loc.Latitude, loc.Longitude);
-                    if (BindingContext is MainViewModel vm)
-                    {
-                        vm.Vehiculos.Clear();
-                        foreach (var o in opciones)
-                        {
-                            vm.Vehiculos.Add(new Models.VehiculoModel
-                            {
-                                Id = o.VehiculoId,
-                                Nombre = o.Nombre,
-                                Imagen = o.Imagen ?? "pickup_truck.png",
-                                Precio = Convert.ToDecimal(o.Precio),
-                                Info = "Opción"
-                            });
-                        }
-                    }
-                    else
-                    {
-                        var vmnew = new MainViewModel(_transporteService);
-                        foreach (var o in opciones)
-                        {
-                            vmnew.Vehiculos.Add(new Models.VehiculoModel
-                            {
-                                Id = o.VehiculoId,
-                                Nombre = o.Nombre,
-                                Imagen = o.Imagen ?? "pickup_truck.png",
-                                Precio = Convert.ToDecimal(o.Precio),
-                                Info = "Opción"
-                            });
-                        }
-                        BindingContext = vmnew;
-                    }
-                }
-                catch (Exception)
-                {
-                    // Servicio no disponible o método no implementado
-                    await DisplayAlert("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
-                }
+                await ActualizarDestinoAsync(new Location(loc.Latitude, loc.Longitude), texto);
             }
             catch (Exception ex)
             {
@@ -154,9 +110,10 @@ namespace AppFletesMueve.Views
                 System.Diagnostics.Debug.WriteLine(ex);
             }
         }
+
         private async void CerrarSesion_Tapped(
-    object sender,
-    TappedEventArgs e)
+            object sender,
+            TappedEventArgs e)
         {
             bool salir = await DisplayAlert(
                 "Cerrar sesión",
@@ -195,7 +152,86 @@ namespace AppFletesMueve.Views
             CerrarMenu_Tapped(sender, e);
             await DisplayAlert("MUEVE", "Sección de promos en construcción.", "Aceptar");
         }
-       
+
+        private async Task ActualizarDestinoAsync(Location destino, string etiqueta)
+        {
+            mapCliente.Pins.Clear();
+            _ultimoDestino = destino;
+            mapCliente.Pins.Add(new Pin { Label = etiqueta, Location = destino });
+
+            // Método síncrono correcto
+            mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(destino, Distance.FromKilometers(5)));
+
+            try
+            {
+                var origenLat = Preferences.Get("UltimaLat", 0.0);
+                var origenLon = Preferences.Get("UltimaLon", 0.0);
+
+                var opciones = await _transporteService.ObtenerOpcionesVehiculoAsync(origenLat, origenLon, destino.Latitude, destino.Longitude);
+
+                if (BindingContext is MainViewModel vm)
+                {
+                    vm.Vehiculos.Clear();
+                    foreach (var o in opciones)
+                    {
+                        vm.Vehiculos.Add(new Models.VehiculoModel
+                        {
+                            Id = o.VehiculoId,
+                            Nombre = o.Nombre,
+                            Imagen = o.Imagen ?? "pickup_truck.png",
+                            Precio = Convert.ToDecimal(o.Precio),
+                            Info = "Opción"
+                        });
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                await DisplayAlert("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
+            }
+        }
+        private async void TxtDestino_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _debounceCts?.Cancel();
+            _debounceCts = new CancellationTokenSource();
+            var token = _debounceCts.Token;
+            var texto = e.NewTextValue;
+
+            try
+            {
+                await Task.Delay(400, token); // espera a que el usuario deje de tipear
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            if (token.IsCancellationRequested) return;
+
+            var sugerencias = await _placesService.BuscarSugerenciasAsync(texto ?? string.Empty);
+            if (token.IsCancellationRequested) return;
+
+            listaSugerencias.ItemsSource = sugerencias;
+            listaSugerencias.IsVisible = sugerencias.Count > 0;
+        }
+
+        private async void SugerenciaDestino_Tapped(object sender, TappedEventArgs e)
+        {
+            if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
+                return;
+
+            listaSugerencias.IsVisible = false;
+            txtDestino.Text = sugerencia.Description;
+
+            var detalle = await _placesService.ObtenerDetalleAsync(sugerencia.PlaceId);
+            if (detalle is null)
+            {
+                await DisplayAlert("MUEVE", "No se pudo obtener la ubicación seleccionada.", "Aceptar");
+                return;
+            }
+
+            await ActualizarDestinoAsync(new Location(detalle.Latitud, detalle.Longitud), sugerencia.Description);
+        }
         private async void Solicitar_Clicked(object sender, EventArgs e)
         {
             if (sender is Button btn && btn.CommandParameter is Models.VehiculoModel vm)

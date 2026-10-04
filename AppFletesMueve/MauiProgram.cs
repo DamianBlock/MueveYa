@@ -24,6 +24,7 @@ namespace AppFletesMueve
 
             builder.Services.AddSingleton<UsuarioService>();
             builder.Services.AddSingleton<TransporteService>();
+            builder.Services.AddSingleton<PlacesService>();
             builder.Services.AddTransient<RegistroPage>();
 
             return builder.Build();
