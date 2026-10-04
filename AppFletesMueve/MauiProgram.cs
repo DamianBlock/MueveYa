@@ -11,7 +11,7 @@ namespace AppFletesMueve
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
-                .UseMauiMaps()
+                .UseMauiMaps() // ✅ Importante para mapas
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
