@@ -238,5 +238,10 @@ namespace AppFletesMueve.Services
                 return (false, ex.Message);
             }
         }
+        public async Task<List<TipoCargaDto>> ObtenerTiposCarga()
+        {
+            try { var r = await _httpClient.GetFromJsonAsync<List<TipoCargaDto>>(ApiUrl + "TiposCarga"); return r ?? new List<TipoCargaDto>(); }
+            catch { return new List<TipoCargaDto>(); }
+        }
     }
 }

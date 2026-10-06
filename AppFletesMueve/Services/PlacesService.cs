@@ -20,7 +20,7 @@ namespace AppFletesMueve.Services
         private readonly HttpClient _httpClient = new();
 
         // Key SEPARADA de la del Maps SDK: esta no puede restringirse por app Android.
-        private const string PlacesApiKey = "TU_KEY_NUEVA_SIN_RESTRICCION_DE_APP";
+        private const string PlacesApiKey = "AIzaSyAuxGynEG7GY0Kdtp9VA6M8B0kQLuI2JT4";
 
         public async Task<List<PlaceSuggestion>> BuscarSugerenciasAsync(string texto)
         {

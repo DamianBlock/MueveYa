@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AppFletesMueve.Views.SeleccionarCargaPage"
+             BackgroundColor="#F5F5F5"
+             Title="¿Qué vas a llevar?">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="¿Qué vas a trasladar?" FontSize="20" FontAttributes="Bold" TextColor="#E65100"/>
+            <Label Text="Elegí la opción que más se parezca a lo tuyo" TextColor="Gray" FontSize="13"/>
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+
+                <Border Grid.Row="0" Grid.Column="0" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="PresetPocasCosas_Tapped"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Label Text="📦" FontSize="32" HorizontalOptions="Center"/>
+                        <Label Text="Unas pocas cosas" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" FontSize="13"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="0" Grid.Column="1" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="PresetMudanzaChica_Tapped"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Label Text="🛋️" FontSize="32" HorizontalOptions="Center"/>
+                        <Label Text="Mudanza chica" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" FontSize="13"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="0" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="PresetMudanzaGrande_Tapped"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Label Text="🏠" FontSize="32" HorizontalOptions="Center"/>
+                        <Label Text="Mudanza grande" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" FontSize="13"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="PresetMateriales_Tapped"/>
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
+                        <Label Text="🧱" FontSize="32" HorizontalOptions="Center"/>
+                        <Label Text="Materiales / construcción" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" FontSize="13"/>
+                    </VerticalStackLayout>
+                </Border>
+
+            </Grid>
+
+            <Label Text="Ajustar en detalle ▾" TextColor="#E65100" FontAttributes="Bold" Margin="0,15,0,0">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="ToggleDetalle_Tapped"/>
+                </Label.GestureRecognizers>
+            </Label>
+
+            <VerticalStackLayout x:Name="panelDetalle" IsVisible="False" Spacing="10">
+
+                <CollectionView x:Name="listaTiposCarga">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" Padding="0,8">
+                                <Label Grid.Column="0" Text="{Binding Nombre}" TextColor="Black" VerticalOptions="Center"/>
+                                <Button Grid.Column="1" Text="-" WidthRequest="36" Clicked="Restar_Clicked" CommandParameter="{Binding .}"/>
+                                <Label Grid.Column="2" Text="{Binding Cantidad}" WidthRequest="30" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                <Button Grid.Column="3" Text="+" WidthRequest="36" Clicked="Sumar_Clicked" CommandParameter="{Binding .}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Button Text="Confirmar selección" BackgroundColor="#E65100" TextColor="White" CornerRadius="12" Clicked="ConfirmarDetalle_Clicked"/>
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

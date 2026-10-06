@@ -17,7 +17,7 @@ namespace AppFletesMueve.Views
         private readonly PlacesService _placesService = new();
         private CancellationTokenSource? _debounceCts;
         private Location? _ultimoDestino;
-
+        private List<ItemCargaRequest> _cargaSeleccionada = new();
         public HomeCliente()
         {
             InitializeComponent();
@@ -159,7 +159,6 @@ namespace AppFletesMueve.Views
             _ultimoDestino = destino;
             mapCliente.Pins.Add(new Pin { Label = etiqueta, Location = destino });
 
-            // Método síncrono correcto
             mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(destino, Distance.FromKilometers(5)));
 
             try
@@ -189,6 +188,12 @@ namespace AppFletesMueve.Views
             {
                 await DisplayAlert("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
             }
+
+            // AGREGAR ESTO:
+            await Navigation.PushAsync(new SeleccionarCargaPage(cargas =>
+            {
+                _cargaSeleccionada = cargas;
+            }));
         }
         private async void TxtDestino_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -242,6 +247,11 @@ namespace AppFletesMueve.Views
                     return;
                 }
 
+                if (_cargaSeleccionada.Count == 0)
+                {
+                    await DisplayAlert("MUEVE", "Primero indicá qué vas a trasladar.", "Aceptar");
+                    return;
+                }
                 bool confirmar = await DisplayAlert("Confirmar", $"Solicitar {vm.Nombre} por ${vm.Precio:0.00}?", "Sí", "No");
                 if (!confirmar) return;
 
@@ -258,7 +268,7 @@ namespace AppFletesMueve.Views
                     LatitudDestino = _ultimoDestino.Latitude,
                     LongitudDestino = _ultimoDestino.Longitude,
                     DistanciaKm = TransporteService.HaversineDistanceKm(origenLat, origenLon, _ultimoDestino.Latitude, _ultimoDestino.Longitude),
-                    Cargas = new List<ItemCargaRequest> { new ItemCargaRequest { TipoCargaId = 1, Cantidad = 1 } }
+                    Cargas = _cargaSeleccionada
                 };
 
                 try
