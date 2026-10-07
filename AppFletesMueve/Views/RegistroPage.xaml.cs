@@ -28,7 +28,7 @@ namespace AppFletesMueve.Views
                 TipoUsuario = pickerTipoUsuario.SelectedItem?.ToString() ?? ""
             };
 
-            var registrado = await _usuarioService.RegistrarUsuario(usuario);
+            var (registrado, error) = await _usuarioService.RegistrarUsuario(usuario);
 
             if (registrado)
             {
@@ -48,10 +48,12 @@ namespace AppFletesMueve.Views
             }
             else
             {
+                var mensaje = !string.IsNullOrWhiteSpace(error) ? error : "No se pudo conectar con el API.";
                 await DisplayAlert(
                     "MUEVE",
-                    "No se pudo conectar con el API.",
+                    mensaje,
                     "Aceptar");
+                lblMensaje.Text = mensaje;
             }
         }
     }

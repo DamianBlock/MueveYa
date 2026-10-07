@@ -57,17 +57,19 @@
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                         <Entry
-                                x:Name="txtOrigen"
-                                Placeholder="Buscar origen..."
-                                Grid.Column="0"
-                                BackgroundColor="#FFFFFF"
-                                TextChanged="TxtOrigen_TextChanged"/>
+        x:Name="txtOrigen"
+        Placeholder="Buscar origen..."
+        PlaceholderColor="#757575"
+        TextColor="#000000"
+        Grid.Column="0"
+        BackgroundColor="#FFFFFF"
+        TextChanged="TxtOrigen_TextChanged"/>
                         <Button
-                                Text="Buscar"
-                                Grid.Column="1"
-                                Clicked="BuscarOrigen_Clicked"
-                                BackgroundColor="#E65100"
-                                TextColor="White"/>
+        Text="Buscar"
+        Grid.Column="1"
+        Clicked="BuscarOrigen_Clicked"
+        BackgroundColor="#E65100"
+        TextColor="White"/>
                     </Grid>
 
                     <CollectionView
@@ -133,13 +135,16 @@
 
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Origen" TextColor="Gray" FontSize="12"/>
-                            <Label x:Name="lblOrigenResumen" Text="Av. Reforma 222" FontAttributes="Bold" TextColor="Black"/>
+                            <Label x:Name="lblOrigenResumen" Text="" FontAttributes="Bold" TextColor="Black"/>
                             <Label Text="Destino" TextColor="Gray" FontSize="12"/>
-                            <Label x:Name="lblDestinoResumen" Text="Roma Norte" FontAttributes="Bold" TextColor="Black"/>
+                            <Label x:Name="lblDestinoResumen" Text="" FontAttributes="Bold" TextColor="Black"/>
                         </VerticalStackLayout>
                     </Border>
 
-                    <Label Text="Selecciona tu Vehículo" FontSize="16" FontAttributes="Bold"/>
+                    <Label Text="Selecciona tu Vehículo" 
+       FontSize="16" 
+       FontAttributes="Bold" 
+       TextColor="Black"/>
 
                     <Button Text="Elegir carga" BackgroundColor="#E65100" TextColor="White" CornerRadius="10" Clicked="ElegirCarga_Clicked"/>
 

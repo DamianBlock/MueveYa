@@ -6,23 +6,51 @@ namespace AppFletesMueve.Services
     public class UsuarioService
     {
         private readonly HttpClient _httpClient;
-#if DEBUG
-        private const string ApiUrl = "http://10.0.2.2:5051/api/"; // emulador Android, desarrollo local
-#else
-        private const string ApiUrl = "https://mueveya.onrender.com/api/"; // producción
-#endif
-     /*        private const string ApiUrl = "https://mueveya.onrender.com/api/";*/ 
+        private readonly string _apiUrl;
+
         public UsuarioService()
         {
             _httpClient = new HttpClient();
+
+            // Priorizar valor manual si fue guardado en Preferences (útil para pruebas)
+            var pref = Preferences.Get("ApiBaseUrl", string.Empty);
+            if (!string.IsNullOrWhiteSpace(pref))
+            {
+                _apiUrl = pref.TrimEnd('/') + "/";
+                return;
+            }
+
+            // Elegir URL por plataforma y entorno de depuración
+#if DEBUG
+            // En desarrollo preferimos apuntar al backend local.
+            try
+            {
+                if (DeviceInfo.Platform == DevicePlatform.Android)
+                {
+                    // El emulador Android usa 10.0.2.2 para acceder al host
+                    _apiUrl = "http://10.0.2.2:5051/api/";
+                }
+                else
+                {
+                    // Simuladores de iOS/Windows/Mac pueden usar localhost
+                    _apiUrl = "http://localhost:5051/api/";
+                }
+            }
+            catch
+            {
+                _apiUrl = "https://mueveya.onrender.com/api/";
+            }
+#else
+            _apiUrl = "https://mueveya.onrender.com/api/";
+#endif
         }
 
-        public async Task<bool> RegistrarUsuario(Usuario usuario)
+        public async Task<(bool Success, string? ErrorMessage)> RegistrarUsuario(Usuario usuario)
         {
             try
             {
                 var response = await _httpClient.PostAsJsonAsync(
-                    ApiUrl + "Usuario",
+                    _apiUrl + "Usuario",
                     usuario);
 
                 var contenido = await response.Content.ReadAsStringAsync();
@@ -33,21 +61,26 @@ namespace AppFletesMueve.Services
                 System.Diagnostics.Debug.WriteLine(
                     $"API RESPUESTA: {contenido}");
 
-                return response.IsSuccessStatusCode;
+                if (response.IsSuccessStatusCode)
+                    return (true, null);
+
+                // Devolver el mensaje de error del API si está presente
+                return (false, !string.IsNullOrWhiteSpace(contenido) ? contenido : "Error en la respuesta del servidor.");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(
                     $"ERROR API: {ex}");
 
-                throw;
+                // No propagar la excepción al UI. Devolver detalle del error para mostrarlo.
+                return (false, ex.Message);
             }
         }
 
         public async Task<Usuario?> Login(string email, string password)
         {
             var response = await _httpClient.PostAsJsonAsync(
-                ApiUrl + "Usuario/login",
+                _apiUrl + "Usuario/login",
                 new
                 {
                     Email = email,
