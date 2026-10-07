@@ -81,7 +81,8 @@
             <Picker
                 x:Name="pickerTipoUsuario"
                 Title="Seleccionar tipo de usuario"
-                BackgroundColor="White">
+                BackgroundColor="White"
+                TextColor="Black">
 
                 <Picker.Items>
                     <x:String>CLIENTE</x:String>
