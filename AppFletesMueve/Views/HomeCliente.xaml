@@ -52,40 +52,72 @@
 
                 </Grid>
 
-                <!-- BÚSQUEDA DE DESTINO -->
-                <VerticalStackLayout HorizontalOptions="Fill" VerticalOptions="Start" Padding="12" Spacing="4">
+                <!-- BÚSQUEDA DE ORIGEN Y DESTINO -->
+                <VerticalStackLayout HorizontalOptions="Fill" VerticalOptions="Start" Padding="12" Spacing="6">
 
-                    <Grid ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                        <Entry
+                                x:Name="txtOrigen"
+                                Placeholder="Buscar origen..."
+                                Grid.Column="0"
+                                BackgroundColor="#FFFFFF"
+                                TextChanged="TxtOrigen_TextChanged"/>
+                        <Button
+                                Text="Buscar"
+                                Grid.Column="1"
+                                Clicked="BuscarOrigen_Clicked"
+                                BackgroundColor="#E65100"
+                                TextColor="White"/>
+                    </Grid>
+
+                    <CollectionView
+                        x:Name="listaSugerenciasOrigen"
+                        IsVisible="False"
+                        BackgroundColor="White"
+                        MaximumHeightRequest="140">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="10,8">
+                                    <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="SugerenciaOrigen_Tapped"/>
+                                    </Grid.GestureRecognizers>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
                         <Entry
                                 x:Name="txtDestino"
                                 Placeholder="Buscar destino..."
                                 Grid.Column="0"
                                 BackgroundColor="#FFFFFF"
                                 TextChanged="TxtDestino_TextChanged"/>
-                                            <Button
+                        <Button
                                 Text="Buscar"
                                 Grid.Column="1"
                                 Clicked="BuscarDestino_Clicked"
                                 BackgroundColor="#E65100"
                                 TextColor="White"/>
-                                        </Grid>
+                    </Grid>
 
-                                        <CollectionView
-                            x:Name="listaSugerencias"
-                            IsVisible="False"
-                            BackgroundColor="White"
-                            MaximumHeightRequest="180">
-                                            <CollectionView.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Padding="10,8">
-                                                        <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
-                                                        <Grid.GestureRecognizers>
-                                                            <TapGestureRecognizer Tapped="SugerenciaDestino_Tapped"/>
-                                                        </Grid.GestureRecognizers>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </CollectionView.ItemTemplate>
-                                        </CollectionView>
+                    <CollectionView
+                        x:Name="listaSugerencias"
+                        IsVisible="False"
+                        BackgroundColor="White"
+                        MaximumHeightRequest="140">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="10,8">
+                                    <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="SugerenciaDestino_Tapped"/>
+                                    </Grid.GestureRecognizers>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
 
                 </VerticalStackLayout>
 
@@ -101,13 +133,15 @@
 
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Origen" TextColor="Gray" FontSize="12"/>
-                            <Label Text="Av. Reforma 222" FontAttributes="Bold" TextColor="Black"/>
+                            <Label x:Name="lblOrigenResumen" Text="Av. Reforma 222" FontAttributes="Bold" TextColor="Black"/>
                             <Label Text="Destino" TextColor="Gray" FontSize="12"/>
-                            <Label Text="Roma Norte" FontAttributes="Bold" TextColor="Black"/>
+                            <Label x:Name="lblDestinoResumen" Text="Roma Norte" FontAttributes="Bold" TextColor="Black"/>
                         </VerticalStackLayout>
                     </Border>
 
                     <Label Text="Selecciona tu Vehículo" FontSize="16" FontAttributes="Bold"/>
+
+                    <Button Text="Elegir carga" BackgroundColor="#E65100" TextColor="White" CornerRadius="10" Clicked="ElegirCarga_Clicked"/>
 
                     <CollectionView
                         ItemsSource="{Binding Vehiculos}"

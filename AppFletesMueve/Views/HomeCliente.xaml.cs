@@ -8,6 +8,8 @@ using Microsoft.Maui.Devices.Sensors;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AppFletesMueve.Views
 {
@@ -17,7 +19,9 @@ namespace AppFletesMueve.Views
         private readonly PlacesService _placesService = new();
         private CancellationTokenSource? _debounceCts;
         private Location? _ultimoDestino;
+        private Location? _ultimoOrigen;
         private List<ItemCargaRequest> _cargaSeleccionada = new();
+
         public HomeCliente()
         {
             InitializeComponent();
@@ -111,6 +115,37 @@ namespace AppFletesMueve.Views
             }
         }
 
+        private async void BuscarOrigen_Clicked(object sender, EventArgs e)
+        {
+            var texto = txtOrigen.Text?.Trim();
+            if (string.IsNullOrEmpty(texto))
+            {
+                await DisplayAlert("MUEVE", "Ingrese un origen.", "Aceptar");
+                return;
+            }
+
+            listaSugerenciasOrigen.IsVisible = false;
+
+            try
+            {
+                var locations = await Geocoding.Default.GetLocationsAsync(texto);
+                var loc = locations?.FirstOrDefault();
+                if (loc == null)
+                {
+                    await DisplayAlert("MUEVE", "No se encontró la ubicación.", "Aceptar");
+                    return;
+                }
+
+                _ultimoOrigen = new Location(loc.Latitude, loc.Longitude);
+                lblOrigenResumen.Text = texto;
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("MUEVE", "Error buscando origen.", "Aceptar");
+                System.Diagnostics.Debug.WriteLine(ex);
+            }
+        }
+
         private async void CerrarSesion_Tapped(
             object sender,
             TappedEventArgs e)
@@ -158,13 +193,15 @@ namespace AppFletesMueve.Views
             mapCliente.Pins.Clear();
             _ultimoDestino = destino;
             mapCliente.Pins.Add(new Pin { Label = etiqueta, Location = destino });
+            lblDestinoResumen.Text = etiqueta;
 
             mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(destino, Distance.FromKilometers(5)));
 
             try
             {
-                var origenLat = Preferences.Get("UltimaLat", 0.0);
-                var origenLon = Preferences.Get("UltimaLon", 0.0);
+
+                var origenLat = _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0);
+                var origenLon = _ultimoOrigen?.Longitude ?? Preferences.Get("UltimaLon", 0.0);
 
                 var opciones = await _transporteService.ObtenerOpcionesVehiculoAsync(origenLat, origenLon, destino.Latitude, destino.Longitude);
 
@@ -188,8 +225,54 @@ namespace AppFletesMueve.Views
             {
                 await DisplayAlert("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
             }
+        }
 
-            // AGREGAR ESTO:
+        private async void TxtOrigen_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _debounceCts?.Cancel();
+            _debounceCts = new CancellationTokenSource();
+            var token = _debounceCts.Token;
+            var texto = e.NewTextValue;
+
+            try
+            {
+                await Task.Delay(400, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            if (token.IsCancellationRequested) return;
+
+            var sugerencias = await _placesService.BuscarSugerenciasAsync(texto ?? string.Empty);
+            if (token.IsCancellationRequested) return;
+
+            listaSugerenciasOrigen.ItemsSource = sugerencias;
+            listaSugerenciasOrigen.IsVisible = sugerencias.Count > 0;
+        }
+
+        private async void SugerenciaOrigen_Tapped(object sender, TappedEventArgs e)
+        {
+            if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
+                return;
+
+            listaSugerenciasOrigen.IsVisible = false;
+            txtOrigen.Text = sugerencia.Description;
+
+            var detalle = await _placesService.ObtenerDetalleAsync(sugerencia.PlaceId);
+            if (detalle is null)
+            {
+                await DisplayAlert("MUEVE", "No se pudo obtener la ubicación seleccionada.", "Aceptar");
+                return;
+            }
+
+            _ultimoOrigen = new Location(detalle.Latitud, detalle.Longitud);
+            lblOrigenResumen.Text = sugerencia.Description;
+        }
+
+        private async void ElegirCarga_Clicked(object sender, EventArgs e)
+        {
             await Navigation.PushAsync(new SeleccionarCargaPage(cargas =>
             {
                 _cargaSeleccionada = cargas;
@@ -255,16 +338,16 @@ namespace AppFletesMueve.Views
                 bool confirmar = await DisplayAlert("Confirmar", $"Solicitar {vm.Nombre} por ${vm.Precio:0.00}?", "Sí", "No");
                 if (!confirmar) return;
 
-                var origenLat = Preferences.Get("UltimaLat", 0.0);
-                var origenLon = Preferences.Get("UltimaLon", 0.0);
+                var origenLat = _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0);
+                var origenLon = _ultimoOrigen?.Longitude ?? Preferences.Get("UltimaLon", 0.0);
 
                 var request = new CrearSolicitudFleteRequest
                 {
                     ClienteId = SesionUsuario.UsuarioId,
-                    DireccionOrigen = "Mi ubicación",
+                    DireccionOrigen = !string.IsNullOrWhiteSpace(lblOrigenResumen.Text) ? lblOrigenResumen.Text : "Mi ubicación",
                     LatitudOrigen = origenLat,
                     LongitudOrigen = origenLon,
-                    DireccionDestino = _ultimoDestino.ToString(),
+                    DireccionDestino = !string.IsNullOrWhiteSpace(lblDestinoResumen.Text) ? lblDestinoResumen.Text : string.Empty,
                     LatitudDestino = _ultimoDestino.Latitude,
                     LongitudDestino = _ultimoDestino.Longitude,
                     DistanciaKm = TransporteService.HaversineDistanceKm(origenLat, origenLon, _ultimoDestino.Latitude, _ultimoDestino.Longitude),
