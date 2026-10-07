@@ -57,19 +57,19 @@
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                         <Entry
-        x:Name="txtOrigen"
-        Placeholder="Buscar origen..."
-        PlaceholderColor="#757575"
-        TextColor="#000000"
-        Grid.Column="0"
-        BackgroundColor="#FFFFFF"
-        TextChanged="TxtOrigen_TextChanged"/>
-                        <Button
-        Text="Buscar"
-        Grid.Column="1"
-        Clicked="BuscarOrigen_Clicked"
-        BackgroundColor="#E65100"
-        TextColor="White"/>
+                            x:Name="txtOrigen"
+                            Placeholder="Buscar origen..."
+                            PlaceholderColor="#757575"
+                            TextColor="#000000"
+                            Grid.Column="0"
+                            BackgroundColor="#FFFFFF"
+                            TextChanged="TxtOrigen_TextChanged"/>
+                                        <Button
+                            Text="Buscar"
+                            Grid.Column="1"
+                            Clicked="BuscarOrigen_Clicked"
+                            BackgroundColor="#E65100"
+                            TextColor="#FFFFFF"/>
                     </Grid>
 
                     <CollectionView
@@ -93,6 +93,7 @@
                         <Entry
                                 x:Name="txtDestino"
                                 Placeholder="Buscar destino..."
+                                TextColor="#000000"
                                 Grid.Column="0"
                                 BackgroundColor="#FFFFFF"
                                 TextChanged="TxtDestino_TextChanged"/>
