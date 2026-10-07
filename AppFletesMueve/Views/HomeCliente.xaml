@@ -45,17 +45,41 @@
 
                 </Grid>
 
-                <!-- MAPA -->
+                <!-- MAPA, con pin fijo central para elegir ubicación arrastrando -->
                 <Grid HeightRequest="220" BackgroundColor="#E0E0E0">
 
-                    <maps:Map x:Name="mapCliente" HeightRequest="220" IsShowingUser="True" />                 
+                    <maps:Map x:Name="mapCliente" HeightRequest="220" IsShowingUser="True" />
+
+                    <!-- Pin fijo, decorativo: el usuario mueve el mapa por debajo -->
+                    <Image
+                        x:Name="pinCentral"
+                        Source="pin_naranja.png"
+                        HeightRequest="40"
+                        WidthRequest="40"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        IsVisible="False"
+                        InputTransparent="True"/>
+
+                    <Button
+                        x:Name="btnConfirmarUbicacionMapa"
+                        Text="Usar esta ubicación"
+                        BackgroundColor="#E65100"
+                        TextColor="White"
+                        CornerRadius="10"
+                        HeightRequest="40"
+                        HorizontalOptions="Center"
+                        VerticalOptions="End"
+                        Margin="0,0,0,10"
+                        IsVisible="False"
+                        Clicked="ConfirmarUbicacionMapa_Clicked"/>
 
                 </Grid>
 
                 <!-- BÚSQUEDA DE ORIGEN Y DESTINO -->
                 <VerticalStackLayout HorizontalOptions="Fill" VerticalOptions="Start" Padding="12" Spacing="6">
 
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,6">
                         <Entry
                             x:Name="txtOrigen"
                             Placeholder="Buscar origen..."
@@ -64,12 +88,21 @@
                             Grid.Column="0"
                             BackgroundColor="#FFFFFF"
                             TextChanged="TxtOrigen_TextChanged"/>
-                                        <Button
+                        <Button
                             Text="Buscar"
                             Grid.Column="1"
                             Clicked="BuscarOrigen_Clicked"
                             BackgroundColor="#E65100"
                             TextColor="#FFFFFF"/>
+                        <Button
+                            Text="📍"
+                            Grid.Column="2"
+                            Clicked="ElegirOrigenEnMapa_Clicked"
+                            BackgroundColor="#FFFFFF"
+                            TextColor="#E65100"
+                            BorderColor="#E65100"
+                            BorderWidth="1"
+                            WidthRequest="48"/>
                     </Grid>
 
                     <CollectionView
@@ -89,20 +122,29 @@
                         </CollectionView.ItemTemplate>
                     </CollectionView>
 
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
                         <Entry
-                                x:Name="txtDestino"
-                                Placeholder="Buscar destino..."
-                                TextColor="#000000"
-                                Grid.Column="0"
-                                BackgroundColor="#FFFFFF"
-                                TextChanged="TxtDestino_TextChanged"/>
+                            x:Name="txtDestino"
+                            Placeholder="Buscar destino..."
+                            TextColor="#000000"
+                            Grid.Column="0"
+                            BackgroundColor="#FFFFFF"
+                            TextChanged="TxtDestino_TextChanged"/>
                         <Button
-                                Text="Buscar"
-                                Grid.Column="1"
-                                Clicked="BuscarDestino_Clicked"
-                                BackgroundColor="#E65100"
-                                TextColor="White"/>
+                            Text="Buscar"
+                            Grid.Column="1"
+                            Clicked="BuscarDestino_Clicked"
+                            BackgroundColor="#E65100"
+                            TextColor="White"/>
+                        <Button
+                            Text="📍"
+                            Grid.Column="2"
+                            Clicked="ElegirDestinoEnMapa_Clicked"
+                            BackgroundColor="#FFFFFF"
+                            TextColor="#E65100"
+                            BorderColor="#E65100"
+                            BorderWidth="1"
+                            WidthRequest="48"/>
                     </Grid>
 
                     <CollectionView
@@ -142,10 +184,7 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Label Text="Selecciona tu Vehículo" 
-       FontSize="16" 
-       FontAttributes="Bold" 
-       TextColor="Black"/>
+                    <Label Text="Selecciona el tipo de carga" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
 
                     <Button Text="Elegir carga" BackgroundColor="#E65100" TextColor="White" CornerRadius="10" Clicked="ElegirCarga_Clicked"/>
 

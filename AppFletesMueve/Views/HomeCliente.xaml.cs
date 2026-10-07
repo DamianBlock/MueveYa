@@ -21,7 +21,10 @@ namespace AppFletesMueve.Views
         private Location? _ultimoDestino;
         private Location? _ultimoOrigen;
         private List<ItemCargaRequest> _cargaSeleccionada = new();
-
+        private CancellationTokenSource? _debounceCtsOrigen;
+        private CancellationTokenSource? _debounceCtsDestino;
+        private bool _eligiendoOrigenEnMapa;
+        private bool _eligiendoDestinoEnMapa;
         public HomeCliente()
         {
             InitializeComponent();
@@ -372,6 +375,61 @@ namespace AppFletesMueve.Views
                     System.Diagnostics.Debug.WriteLine(ex);
                 }
             }
+        }
+        private void ElegirOrigenEnMapa_Clicked(object sender, EventArgs e)
+        {
+            _eligiendoOrigenEnMapa = true;
+            _eligiendoDestinoEnMapa = false;
+            pinCentral.IsVisible = true;
+            btnConfirmarUbicacionMapa.IsVisible = true;
+        }
+
+        private void ElegirDestinoEnMapa_Clicked(object sender, EventArgs e)
+        {
+            _eligiendoDestinoEnMapa = true;
+            _eligiendoOrigenEnMapa = false;
+            pinCentral.IsVisible = true;
+            btnConfirmarUbicacionMapa.IsVisible = true;
+        }
+
+        private async void ConfirmarUbicacionMapa_Clicked(object sender, EventArgs e)
+        {
+            var centro = mapCliente.VisibleRegion?.Center;
+            if (centro is null)
+            {
+                await DisplayAlert("MUEVE", "Mové el mapa un poco e intentá de nuevo.", "Aceptar");
+                return;
+            }
+
+            string etiqueta = $"Lat {centro.Latitude:0.0000}, Lon {centro.Longitude:0.0000}";
+            try
+            {
+                var placemarks = await Geocoding.Default.GetPlacemarksAsync(centro);
+                var lugar = placemarks?.FirstOrDefault();
+                if (lugar != null)
+                {
+                    etiqueta = $"{lugar.Thoroughfare} {lugar.SubThoroughfare}, {lugar.Locality}".Trim(' ', ',');
+                    if (string.IsNullOrWhiteSpace(etiqueta)) etiqueta = $"Lat {centro.Latitude:0.0000}, Lon {centro.Longitude:0.0000}";
+                }
+            }
+            catch { /* si falla la geocodificación inversa, usamos las coordenadas igual */ }
+
+            if (_eligiendoOrigenEnMapa)
+            {
+                _ultimoOrigen = centro;
+                lblOrigenResumen.Text = etiqueta;
+                txtOrigen.Text = etiqueta;
+            }
+            else if (_eligiendoDestinoEnMapa)
+            {
+                await ActualizarDestinoAsync(centro, etiqueta);
+                txtDestino.Text = etiqueta;
+            }
+
+            pinCentral.IsVisible = false;
+            btnConfirmarUbicacionMapa.IsVisible = false;
+            _eligiendoOrigenEnMapa = false;
+            _eligiendoDestinoEnMapa = false;
         }
     }
 }
