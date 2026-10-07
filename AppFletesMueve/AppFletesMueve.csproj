@@ -102,6 +102,9 @@
 	  <None Update="Views\CompletarPerfilConductorPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </None>
+	  <None Update="Views\SeleccionarCargaPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </None>
 	</ItemGroup>
 
 </Project>
