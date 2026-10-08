@@ -5,6 +5,7 @@ using Microsoft.Maui.Maps;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Collections.Generic;
+using Microsoft.Maui.Graphics;
 
 namespace AppFletesMueve.Views;
 
@@ -105,16 +106,13 @@ public partial class HomeConductor : ContentPage
         {
             try
             {
-                var pin = new Pin
-                {
-                    Label = $"${solicitud.Precio:0.00} - {solicitud.ClienteNombre}",
-                    Location = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen)
-                };
+                // Renderizar la solicitud en el mapa (pines + trazado)
+                RenderSolicitudOnMap(solicitud);
 
-                // Almacenar la referencia a la solicitud
-                _pinToSolicitud[pin] = solicitud;
-
-                mapConductor.Pins.Add(pin);
+                // Almacenar referencia por seguridad (puede no usarse actualmente)
+                // crear un pin de referencia para el diccionario
+                var refPin = new Pin { Label = $"${solicitud.Precio:0.00} - {solicitud.ClienteNombre}", Location = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen) };
+                _pinToSolicitud[refPin] = solicitud;
             }
             catch (Exception ex)
             {
@@ -183,6 +181,47 @@ public partial class HomeConductor : ContentPage
         lblPrecio.Text = $"${s.Precio:0.00} MXN";
 
         btnAccion.Text = "ACEPTAR VIAJE";
+        // Mostrar la ubicación del cliente en el mapa y centrar
+        try
+        {
+            RenderSolicitudOnMap(s);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error renderizando solicitud en mapa: {ex}");
+        }
+    }
+
+    private void RenderSolicitudOnMap(SolicitudFleteDto s)
+    {
+        if (s == null) return;
+
+        mapConductor.Pins.Clear();
+        mapConductor.MapElements.Clear();
+
+        var origen = new Location(s.LatitudOrigen, s.LongitudOrigen);
+        var destino = new Location(s.LatitudDestino, s.LongitudDestino);
+
+        var pinOrigen = new Pin { Label = $"Origen: {s.DireccionOrigen}", Location = origen };
+        var pinDestino = new Pin { Label = $"Destino: {s.DireccionDestino}", Location = destino };
+
+        mapConductor.Pins.Add(pinOrigen);
+        mapConductor.Pins.Add(pinDestino);
+
+        // Dibujar una línea simple entre origen y destino
+        var poly = new Polyline
+        {
+            StrokeColor = Color.FromArgb("#E65100"),
+            StrokeWidth = 6
+        };
+        poly.Geopath.Add(origen);
+        poly.Geopath.Add(destino);
+        mapConductor.MapElements.Add(poly);
+
+        // Centrar en el origen con un radio basado en la distancia
+        var distanciaKm = TransporteService.HaversineDistanceKm(s.LatitudOrigen, s.LongitudOrigen, s.LatitudDestino, s.LongitudDestino);
+        var radioKm = Math.Max(1, distanciaKm / 2.0);
+        mapConductor.MoveToRegion(MapSpan.FromCenterAndRadius(origen, Distance.FromKilometers(radioKm)));
     }
 
     private void MostrarViajeEnCurso(SolicitudFleteDto s)

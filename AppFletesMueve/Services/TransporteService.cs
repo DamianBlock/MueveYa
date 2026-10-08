@@ -44,6 +44,8 @@ namespace AppFletesMueve.Services
         public string DireccionDestino { get; set; } = string.Empty;
         public double LatitudOrigen { get; set; }
         public double LongitudOrigen { get; set; }
+        public double LatitudDestino { get; set; }
+        public double LongitudDestino { get; set; }
         public double DistanciaKm { get; set; }
         public decimal Precio { get; set; }
         public string Estado { get; set; } = string.Empty;
