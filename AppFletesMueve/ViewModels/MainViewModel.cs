@@ -91,14 +91,14 @@ namespace AppFletesMueve.ViewModels
             if (VehiculoSeleccionado == null)
             {
                 if (page != null)
-                    await page.DisplayAlert("MUEVE", "Seleccioná un vehículo antes de confirmar.", "OK");
+                    await page.DisplayAlertAsync("MUEVE", "Seleccioná un vehículo antes de confirmar.", "OK");
                 return;
             }
 
             if (SesionUsuario.UsuarioId == 0)
             {
                 if (page != null)
-                    await page.DisplayAlert("MUEVE", "Debés iniciar sesión para confirmar un flete.", "OK");
+                    await page.DisplayAlertAsync("MUEVE", "Debés iniciar sesión para confirmar un flete.", "OK");
                 return;
             }
 
@@ -134,7 +134,7 @@ namespace AppFletesMueve.ViewModels
             }
 
             if (page != null)
-                await page.DisplayAlert("MUEVE", mensaje, "OK");
+                await page.DisplayAlertAsync("MUEVE", mensaje, "OK");
         }
         public event PropertyChangedEventHandler? PropertyChanged;
 

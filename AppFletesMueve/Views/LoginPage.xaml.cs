@@ -13,7 +13,7 @@ public partial class LoginPage : ContentPage
         _usuarioService = new UsuarioService();
     }
 
-    private async void Ingresar_Clicked(object sender, EventArgs e)
+    private async void Ingresar_Clicked(object? sender, EventArgs e)
     {
         Usuario? usuario;
         try
@@ -22,7 +22,7 @@ public partial class LoginPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert(
+            await DisplayAlertAsync(
                 "Error de conexión",
                 "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.",
                 "Aceptar");
@@ -32,7 +32,7 @@ public partial class LoginPage : ContentPage
 
         if (usuario == null)
         {
-            await DisplayAlert("Error", "Usuario o contraseña incorrectos", "Aceptar");
+            await DisplayAlertAsync("Error", "Usuario o contraseña incorrectos", "Aceptar");
             return;
         }
 
@@ -55,7 +55,7 @@ public partial class LoginPage : ContentPage
         }
     }
 
-    private async void Registro_Clicked(object sender, EventArgs e)
+    private async void Registro_Clicked(object? sender, EventArgs e)
     {
         await Navigation.PushAsync(new RegistroPage(_usuarioService));
     }

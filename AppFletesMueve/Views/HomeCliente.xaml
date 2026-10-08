@@ -53,7 +53,7 @@
                     <!-- Pin fijo, decorativo: el usuario mueve el mapa por debajo -->
                     <Image
                         x:Name="pinCentral"
-                        Source="pin_naranja.png"
+                        Source="pin_naranja.svg"
                         HeightRequest="40"
                         WidthRequest="40"
                         HorizontalOptions="Center"
@@ -269,11 +269,12 @@
         </BoxView>
 
         <!-- OVERLAY: PANEL DEL MENÚ -->
-        <Frame
+        <Border
             x:Name="panelMenu"
             IsVisible="False"
             BackgroundColor="White"
-            CornerRadius="0"
+            StrokeThickness="0"
+            StrokeShape="Rectangle"
             Padding="0"
             WidthRequest="230"
             HorizontalOptions="Start"
@@ -313,7 +314,7 @@
 
             </VerticalStackLayout>
 
-        </Frame>
+        </Border>
 
     </Grid>
 

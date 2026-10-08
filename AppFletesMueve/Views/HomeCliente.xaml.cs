@@ -17,7 +17,7 @@ namespace AppFletesMueve.Views
     {
         private readonly TransporteService _transporteService = new();
         private readonly PlacesService _placesService = new();
-        private CancellationTokenSource? _debounceCts;
+     //  private CancellationTokenSource? _debounceCts;
         private Location? _ultimoDestino;
         private Location? _ultimoOrigen;
         private List<ItemCargaRequest> _cargaSeleccionada = new();
@@ -25,6 +25,9 @@ namespace AppFletesMueve.Views
         private CancellationTokenSource? _debounceCtsDestino;
         private bool _eligiendoOrigenEnMapa;
         private bool _eligiendoDestinoEnMapa;
+        private string? _origenDescripcionSeleccionada;
+        private string? _destinoDescripcionSeleccionada;
+
         public HomeCliente()
         {
             InitializeComponent();
@@ -64,7 +67,7 @@ namespace AppFletesMueve.Views
             }
         }
 
-        private void Vehiculos_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Vehiculos_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (BindingContext is ViewModels.MainViewModel vm)
             {
@@ -72,7 +75,7 @@ namespace AppFletesMueve.Views
             }
         }
 
-        private async void AbrirRegistro_Clicked(object sender, EventArgs e)
+        private async void AbrirRegistro_Clicked(object? sender, EventArgs e)
         {
             if (Handler?.MauiContext is not { } mauiContext)
                 return;
@@ -81,19 +84,19 @@ namespace AppFletesMueve.Views
 
             await Navigation.PushAsync(new RegistroPage(usuarioService));
         }
-        private async void VerMapa_Clicked(object sender, EventArgs e)
+        private async void VerMapa_Clicked(object? sender, EventArgs e)
         {
-            await DisplayAlert(
+            await DisplayAlertAsync(
                 "MUEVE",
                 "Aquí se abrirá el mapa interactivo.",
                 "Aceptar");
         }
-        private async void BuscarDestino_Clicked(object sender, EventArgs e)
+        private async void BuscarDestino_Clicked(object? sender, EventArgs e)
         {
             var texto = txtDestino.Text?.Trim();
             if (string.IsNullOrEmpty(texto))
             {
-                await DisplayAlert("MUEVE", "Ingrese un destino.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "Ingrese un destino.", "Aceptar");
                 return;
             }
 
@@ -105,7 +108,7 @@ namespace AppFletesMueve.Views
                 var loc = locations?.FirstOrDefault();
                 if (loc == null)
                 {
-                    await DisplayAlert("MUEVE", "No se encontró la ubicación.", "Aceptar");
+                    await DisplayAlertAsync("MUEVE", "No se encontró la ubicación.", "Aceptar");
                     return;
                 }
 
@@ -113,17 +116,17 @@ namespace AppFletesMueve.Views
             }
             catch (Exception ex)
             {
-                await DisplayAlert("MUEVE", "Error buscando destino.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "Error buscando destino.", "Aceptar");
                 System.Diagnostics.Debug.WriteLine(ex);
             }
         }
 
-        private async void BuscarOrigen_Clicked(object sender, EventArgs e)
+        private async void BuscarOrigen_Clicked(object? sender, EventArgs e)
         {
             var texto = txtOrigen.Text?.Trim();
             if (string.IsNullOrEmpty(texto))
             {
-                await DisplayAlert("MUEVE", "Ingrese un origen.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "Ingrese un origen.", "Aceptar");
                 return;
             }
 
@@ -135,25 +138,26 @@ namespace AppFletesMueve.Views
                 var loc = locations?.FirstOrDefault();
                 if (loc == null)
                 {
-                    await DisplayAlert("MUEVE", "No se encontró la ubicación.", "Aceptar");
+                    await DisplayAlertAsync("MUEVE", "No se encontró la ubicación.", "Aceptar");
                     return;
                 }
 
                 _ultimoOrigen = new Location(loc.Latitude, loc.Longitude);
                 lblOrigenResumen.Text = texto;
+                ActualizarTrayecto();
             }
             catch (Exception ex)
             {
-                await DisplayAlert("MUEVE", "Error buscando origen.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "Error buscando origen.", "Aceptar");
                 System.Diagnostics.Debug.WriteLine(ex);
             }
         }
 
         private async void CerrarSesion_Tapped(
-            object sender,
+            object? sender,
             TappedEventArgs e)
         {
-            bool salir = await DisplayAlert(
+            bool salir = await DisplayAlertAsync(
                 "Cerrar sesión",
                 "¿Deseas cerrar sesión?",
                 "Sí",
@@ -167,38 +171,35 @@ namespace AppFletesMueve.Views
                 app.Windows[0].Page = new NavigationPage(new LoginPage());
             }
         }
-        private void AbrirMenu_Tapped(object sender, TappedEventArgs e)
+        private void AbrirMenu_Tapped(object? sender, TappedEventArgs e)
         {
             fondoOscuro.IsVisible = true;
             panelMenu.IsVisible = true;
         }
 
-        private void CerrarMenu_Tapped(object sender, TappedEventArgs e)
+        private void CerrarMenu_Tapped(object? sender, TappedEventArgs e)
         {
             fondoOscuro.IsVisible = false;
             panelMenu.IsVisible = false;
         }
 
-        private async void Viajes_Tapped(object sender, TappedEventArgs e)
+        private async void Viajes_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            await DisplayAlert("MUEVE", "Sección de viajes en construcción.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "Sección de viajes en construcción.", "Aceptar");
         }
 
-        private async void Promos_Tapped(object sender, TappedEventArgs e)
+        private async void Promos_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            await DisplayAlert("MUEVE", "Sección de promos en construcción.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "Sección de promos en construcción.", "Aceptar");
         }
 
         private async Task ActualizarDestinoAsync(Location destino, string etiqueta)
         {
-            mapCliente.Pins.Clear();
             _ultimoDestino = destino;
-            mapCliente.Pins.Add(new Pin { Label = etiqueta, Location = destino });
             lblDestinoResumen.Text = etiqueta;
-
-            mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(destino, Distance.FromKilometers(5)));
+            ActualizarTrayecto();
 
             try
             {
@@ -226,25 +227,22 @@ namespace AppFletesMueve.Views
             }
             catch (Exception)
             {
-                await DisplayAlert("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
             }
         }
 
-        private async void TxtOrigen_TextChanged(object sender, TextChangedEventArgs e)
+        private async void TxtOrigen_TextChanged(object? sender, TextChangedEventArgs e)
         {
-            _debounceCts?.Cancel();
-            _debounceCts = new CancellationTokenSource();
-            var token = _debounceCts.Token;
+            if (e.NewTextValue == _origenDescripcionSeleccionada)
+                return;
+
+            _debounceCtsOrigen?.Cancel();
+            _debounceCtsOrigen = new CancellationTokenSource();
+            var token = _debounceCtsOrigen.Token;
             var texto = e.NewTextValue;
 
-            try
-            {
-                await Task.Delay(400, token);
-            }
-            catch (TaskCanceledException)
-            {
-                return;
-            }
+            try { await Task.Delay(400, token); }
+            catch (TaskCanceledException) { return; }
 
             if (token.IsCancellationRequested) return;
 
@@ -255,47 +253,48 @@ namespace AppFletesMueve.Views
             listaSugerenciasOrigen.IsVisible = sugerencias.Count > 0;
         }
 
-        private async void SugerenciaOrigen_Tapped(object sender, TappedEventArgs e)
+        private async void SugerenciaOrigen_Tapped(object? sender, TappedEventArgs e)
         {
+
             if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
                 return;
 
+            _debounceCtsOrigen?.Cancel();
             listaSugerenciasOrigen.IsVisible = false;
+            _origenDescripcionSeleccionada = sugerencia.Description;
             txtOrigen.Text = sugerencia.Description;
 
             var detalle = await _placesService.ObtenerDetalleAsync(sugerencia.PlaceId);
             if (detalle is null)
             {
-                await DisplayAlert("MUEVE", "No se pudo obtener la ubicación seleccionada.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "No se pudo obtener la ubicación seleccionada.", "Aceptar");
                 return;
             }
 
             _ultimoOrigen = new Location(detalle.Latitud, detalle.Longitud);
             lblOrigenResumen.Text = sugerencia.Description;
+            ActualizarTrayecto();
         }
 
-        private async void ElegirCarga_Clicked(object sender, EventArgs e)
+        private async void ElegirCarga_Clicked(object? sender, EventArgs e)
         {
             await Navigation.PushAsync(new SeleccionarCargaPage(cargas =>
             {
                 _cargaSeleccionada = cargas;
             }));
         }
-        private async void TxtDestino_TextChanged(object sender, TextChangedEventArgs e)
+        private async void TxtDestino_TextChanged(object? sender, TextChangedEventArgs e)
         {
-            _debounceCts?.Cancel();
-            _debounceCts = new CancellationTokenSource();
-            var token = _debounceCts.Token;
+            if (e.NewTextValue == _destinoDescripcionSeleccionada)
+                return;
+
+            _debounceCtsDestino?.Cancel();
+            _debounceCtsDestino = new CancellationTokenSource();
+            var token = _debounceCtsDestino.Token;
             var texto = e.NewTextValue;
 
-            try
-            {
-                await Task.Delay(400, token); // espera a que el usuario deje de tipear
-            }
-            catch (TaskCanceledException)
-            {
-                return;
-            }
+            try { await Task.Delay(400, token); }
+            catch (TaskCanceledException) { return; }
 
             if (token.IsCancellationRequested) return;
 
@@ -306,39 +305,43 @@ namespace AppFletesMueve.Views
             listaSugerencias.IsVisible = sugerencias.Count > 0;
         }
 
-        private async void SugerenciaDestino_Tapped(object sender, TappedEventArgs e)
+        private async void SugerenciaDestino_Tapped(object? sender, TappedEventArgs e)
         {
+           
+
             if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
                 return;
 
-            listaSugerencias.IsVisible = false;
-            txtDestino.Text = sugerencia.Description;
+            _debounceCtsOrigen?.Cancel();
+            listaSugerenciasOrigen.IsVisible = false;
+            _origenDescripcionSeleccionada = sugerencia.Description;
+            txtOrigen.Text = sugerencia.Description;
 
             var detalle = await _placesService.ObtenerDetalleAsync(sugerencia.PlaceId);
             if (detalle is null)
             {
-                await DisplayAlert("MUEVE", "No se pudo obtener la ubicación seleccionada.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "No se pudo obtener la ubicación seleccionada.", "Aceptar");
                 return;
             }
 
             await ActualizarDestinoAsync(new Location(detalle.Latitud, detalle.Longitud), sugerencia.Description);
         }
-        private async void Solicitar_Clicked(object sender, EventArgs e)
+        private async void Solicitar_Clicked(object? sender, EventArgs e)
         {
             if (sender is Button btn && btn.CommandParameter is Models.VehiculoModel vm)
             {
                 if (_ultimoDestino == null)
                 {
-                    await DisplayAlert("MUEVE", "Primero buscá y seleccioná un destino.", "Aceptar");
+                    await DisplayAlertAsync("MUEVE", "Primero buscá y seleccioná un destino.", "Aceptar");
                     return;
                 }
 
                 if (_cargaSeleccionada.Count == 0)
                 {
-                    await DisplayAlert("MUEVE", "Primero indicá qué vas a trasladar.", "Aceptar");
+                    await DisplayAlertAsync("MUEVE", "Primero indicá qué vas a trasladar.", "Aceptar");
                     return;
                 }
-                bool confirmar = await DisplayAlert("Confirmar", $"Solicitar {vm.Nombre} por ${vm.Precio:0.00}?", "Sí", "No");
+                bool confirmar = await DisplayAlertAsync("Confirmar", $"Solicitar {vm.Nombre} por ${vm.Precio:0.00}?", "Sí", "No");
                 if (!confirmar) return;
 
                 var origenLat = _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0);
@@ -362,21 +365,21 @@ namespace AppFletesMueve.Views
                     var resultado = await _transporteService.CrearSolicitud(request);
                     if (resultado != null)
                     {
-                        await DisplayAlert("MUEVE", $"Solicitud creada. Precio estimado: ${resultado.Precio:0.00}", "Aceptar");
+                        await DisplayAlertAsync("MUEVE", $"Solicitud creada. Precio estimado: ${resultado.Precio:0.00}", "Aceptar");
                     }
                     else
                     {
-                        await DisplayAlert("MUEVE", "No se pudo crear la solicitud.", "Aceptar");
+                        await DisplayAlertAsync("MUEVE", "No se pudo crear la solicitud.", "Aceptar");
                     }
                 }
                 catch (Exception ex)
                 {
-                    await DisplayAlert("MUEVE", "Error al crear la solicitud.", "Aceptar");
+                    await DisplayAlertAsync("MUEVE", "Error al crear la solicitud.", "Aceptar");
                     System.Diagnostics.Debug.WriteLine(ex);
                 }
             }
         }
-        private void ElegirOrigenEnMapa_Clicked(object sender, EventArgs e)
+        private void ElegirOrigenEnMapa_Clicked(object? sender, EventArgs e)
         {
             _eligiendoOrigenEnMapa = true;
             _eligiendoDestinoEnMapa = false;
@@ -384,7 +387,7 @@ namespace AppFletesMueve.Views
             btnConfirmarUbicacionMapa.IsVisible = true;
         }
 
-        private void ElegirDestinoEnMapa_Clicked(object sender, EventArgs e)
+        private void ElegirDestinoEnMapa_Clicked(object? sender, EventArgs e)
         {
             _eligiendoDestinoEnMapa = true;
             _eligiendoOrigenEnMapa = false;
@@ -392,12 +395,12 @@ namespace AppFletesMueve.Views
             btnConfirmarUbicacionMapa.IsVisible = true;
         }
 
-        private async void ConfirmarUbicacionMapa_Clicked(object sender, EventArgs e)
+        private async void ConfirmarUbicacionMapa_Clicked(object? sender, EventArgs e)
         {
-            var centro = mapCliente.VisibleRegion?.Center;
+            var centro = mapCliente.VisibleRegion?.Center;            
             if (centro is null)
             {
-                await DisplayAlert("MUEVE", "Mové el mapa un poco e intentá de nuevo.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "Mové el mapa un poco e intentá de nuevo.", "Aceptar");
                 return;
             }
 
@@ -418,18 +421,70 @@ namespace AppFletesMueve.Views
             {
                 _ultimoOrigen = centro;
                 lblOrigenResumen.Text = etiqueta;
+                _origenDescripcionSeleccionada = etiqueta;
                 txtOrigen.Text = etiqueta;
+                ActualizarTrayecto();
             }
             else if (_eligiendoDestinoEnMapa)
             {
-                await ActualizarDestinoAsync(centro, etiqueta);
+                _destinoDescripcionSeleccionada = etiqueta;
                 txtDestino.Text = etiqueta;
+                await ActualizarDestinoAsync(centro, etiqueta);
             }
 
             pinCentral.IsVisible = false;
             btnConfirmarUbicacionMapa.IsVisible = false;
             _eligiendoOrigenEnMapa = false;
             _eligiendoDestinoEnMapa = false;
+        }
+        private void ActualizarTrayecto()
+        {
+            var origen = _ultimoOrigen;
+            if (origen == null)
+            {
+                var lat = Preferences.Get("UltimaLat", 0.0);
+                var lon = Preferences.Get("UltimaLon", 0.0);
+                if (lat != 0 || lon != 0)
+                {
+                    origen = new Location(lat, lon);
+                    if (string.IsNullOrWhiteSpace(lblOrigenResumen.Text))
+                        lblOrigenResumen.Text = "Mi ubicación actual";
+                }
+            }
+
+            mapCliente.Pins.Clear();
+            mapCliente.MapElements.Clear();
+
+            if (origen != null)
+                mapCliente.Pins.Add(new Pin { Label = "Origen: " + lblOrigenResumen.Text, Location = origen });
+
+            if (_ultimoDestino != null)
+                mapCliente.Pins.Add(new Pin { Label = "Destino: " + lblDestinoResumen.Text, Location = _ultimoDestino });
+
+            // Si todavía falta uno de los dos puntos, solo centramos en el que haya
+            if (origen == null || _ultimoDestino == null)
+            {
+                var unico = _ultimoDestino ?? origen;
+                if (unico != null)
+                    mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(unico, Distance.FromKilometers(5)));
+                return;
+            }
+
+            var linea = new Polyline { StrokeColor = Colors.Orange, StrokeWidth = 8 };
+            linea.Geopath.Add(origen);
+            linea.Geopath.Add(_ultimoDestino);
+            mapCliente.MapElements.Add(linea);
+
+            var distanciaKm = TransporteService.HaversineDistanceKm(
+                origen.Latitude, origen.Longitude,
+                _ultimoDestino.Latitude, _ultimoDestino.Longitude);
+
+            var centro = new Location(
+                (origen.Latitude + _ultimoDestino.Latitude) / 2,
+                (origen.Longitude + _ultimoDestino.Longitude) / 2);
+
+            var radioKm = Math.Max(distanciaKm * 0.75, 0.5);
+            mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(centro, Distance.FromKilometers(radioKm)));
         }
     }
 }

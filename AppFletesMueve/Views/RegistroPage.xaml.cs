@@ -15,7 +15,7 @@ namespace AppFletesMueve.Views
             _usuarioService = usuarioService;
         }
 
-        private async void CrearCuenta_Clicked(object sender, EventArgs e)
+        private async void CrearCuenta_Clicked(object? sender, EventArgs e)
         {
             var usuario = new Usuario
             {
@@ -32,7 +32,7 @@ namespace AppFletesMueve.Views
 
             if (registrado)
             {
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     "MUEVE",
                     "Usuario registrado correctamente en el API.",
                     "Aceptar");
@@ -49,7 +49,7 @@ namespace AppFletesMueve.Views
             else
             {
                 var mensaje = !string.IsNullOrWhiteSpace(error) ? error : "No se pudo conectar con el API.";
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     "MUEVE",
                     mensaje,
                     "Aceptar");

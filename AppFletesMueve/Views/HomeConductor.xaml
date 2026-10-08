@@ -1,156 +1,119 @@
 <?xml version="1.0" encoding="utf-8" ?>
-
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+    xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"
     x:Class="AppFletesMueve.Views.HomeConductor"
     BackgroundColor="#F5F5F5"
     NavigationPage.HasNavigationBar="False">
 
     <ScrollView>
-
         <VerticalStackLayout Spacing="15">
 
             <!-- CABECERA -->
-
-            <Grid BackgroundColor="#E65100"
-                  Padding="15,10">
-
-                <Image
-                    Source="logo_mueve.png"
-                    HeightRequest="40"
-                    HorizontalOptions="Start"/>
-
+            <Grid BackgroundColor="#E65100" Padding="15,10">
+                <Image Source="logo_mueve.png" HeightRequest="40" HorizontalOptions="Start"/>
             </Grid>
 
-            <Frame
-                Margin="15,10"
-                CornerRadius="12"
-                BackgroundColor="White">
-
+            <!-- CABECERA Y SALUDO -->
+            <Border Margin="15,10"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="15">
                 <Grid ColumnDefinitions="*,Auto">
-
                     <!-- Saludo -->
-
                     <VerticalStackLayout Grid.Column="0">
-
-                        <Label
-                x:Name="lblSaludo"
-                FontSize="24"
-                FontAttributes="Bold"
-                TextColor="Black"/>
-
-                        <Label
-                Text="Tenés viajes disponibles cerca tuyo"
-                FontSize="14"
-                TextColor="Gray"/>
-
+                        <Label x:Name="lblSaludo"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="Black"/>
+                        <Label Text="Tenés viajes disponibles cerca tuyo"
+                               FontSize="14"
+                               TextColor="Gray"/>
                     </VerticalStackLayout>
 
                     <!-- Cerrar sesión -->
-
-                    <Label
-                        Grid.Column="1"
-                        Text="Cerrar sesión"
-                        TextColor="#E65100"
-                        FontAttributes="Bold"
-                        VerticalOptions="Center">
-
+                    <Label Grid.Column="1"
+                           Text="Cerrar sesión"
+                           TextColor="#E65100"
+                           FontAttributes="Bold"
+                           VerticalOptions="Center">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer
-                    Tapped="CerrarSesion_Tapped"/>
+                            <TapGestureRecognizer Tapped="CerrarSesion_Tapped"/>
                         </Label.GestureRecognizers>
-
                     </Label>
-
                 </Grid>
-
-            </Frame>
+            </Border>
 
             <!-- MAPA CONDUCTOR -->
-
-            <Frame
-                Margin="15,0"
-                CornerRadius="12"
-                Padding="0">
-
+            <Border Margin="15,0"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    Padding="0">
                 <Grid HeightRequest="220">
                     <maps:Map x:Name="mapConductor" />
-                    <!-- Nota: MAUI Maps no define PinClicked en Map; gestionar taps de pines requiere otra aproximación -->
-
-
-                    <Label
-                        Text="Ubicación del Cliente"
-                        BackgroundColor="#E65100"
-                        TextColor="White"
-                        Padding="10,5"
-                        HorizontalOptions="Start"
-                        VerticalOptions="Start"/>
-
+                    <Label Text="Ubicación del Cliente"
+                           BackgroundColor="#E65100"
+                           TextColor="White"
+                           Padding="10,5"
+                           HorizontalOptions="Start"
+                           VerticalOptions="Start"/>
                 </Grid>
+            </Border>
 
-            </Frame>
-            <!-- VIAJE -->
-            <Frame
-    Margin="15,0"
-    CornerRadius="12"
-    BackgroundColor="White">
-
+            <!-- DETALLE DEL VIAJE -->
+            <Border Margin="15,0"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="15">
                 <VerticalStackLayout Spacing="0">
 
                     <VerticalStackLayout x:Name="contenedorViaje" Spacing="10" IsVisible="False">
-
-                        <Label
-                x:Name="lblTituloViaje"
-                Text="Solicitud de Viaje"
-                FontAttributes="Bold"
-                FontSize="18"
-                TextColor="#E65100"/>
+                        <Label x:Name="lblTituloViaje"
+                               Text="Solicitud de Viaje"
+                               FontAttributes="Bold"
+                               FontSize="18"
+                               TextColor="#E65100"/>
 
                         <Label x:Name="lblCliente" TextColor="Black"/>
                         <Label x:Name="lblOrigen" TextColor="Black"/>
                         <Label x:Name="lblDestino" TextColor="Black"/>
                         <Label x:Name="lblVehiculo" TextColor="Black"/>
 
-                        <Label
-                x:Name="lblPrecio"
-                FontSize="22"
-                FontAttributes="Bold"
-                TextColor="#E65100"/>
+                        <Label x:Name="lblPrecio"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               TextColor="#E65100"/>
 
-                        <Button
-                x:Name="btnAccion"
-                Text="ACEPTAR VIAJE"
-                BackgroundColor="#E65100"
-                TextColor="White"
-                CornerRadius="12"
-                Clicked="AceptarViaje_Clicked"/>
-
+                        <Button x:Name="btnAccion"
+                                Text="ACEPTAR VIAJE"
+                                BackgroundColor="#E65100"
+                                TextColor="White"
+                                CornerRadius="12"
+                                Clicked="AceptarViaje_Clicked"/>
                     </VerticalStackLayout>
 
-                    <Label
-            x:Name="lblSinViajes"
-            Text="Buscando viajes disponibles..."
-            TextColor="Gray"
-            HorizontalOptions="Center"
-            Margin="0,20"/>
+                    <Label x:Name="lblSinViajes"
+                           Text="Buscando viajes disponibles..."
+                           TextColor="Gray"
+                           HorizontalOptions="Center"
+                           Margin="0,20"/>
 
-                    <Button
-            x:Name="btnCompletarPerfil"
-            Text="Completar perfil de conductor"
-            BackgroundColor="#E65100"
-            TextColor="White"
-            CornerRadius="12"
-            Margin="20,0,20,20"
-            IsVisible="False"
-            Clicked="CompletarPerfil_Clicked"/>
+                    <Button x:Name="btnCompletarPerfil"
+                            Text="Completar perfil de conductor"
+                            BackgroundColor="#E65100"
+                            TextColor="White"
+                            CornerRadius="12"
+                            Margin="20,0,20,20"
+                            IsVisible="False"
+                            Clicked="CompletarPerfil_Clicked"/>
 
                 </VerticalStackLayout>
+            </Border>
 
-            </Frame>
         </VerticalStackLayout>
-
     </ScrollView>
 
 </ContentPage>

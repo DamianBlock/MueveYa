@@ -205,19 +205,19 @@ public partial class HomeConductor : ContentPage
         btnAccion.Text = "FINALIZAR VIAJE";
     }
 
-    private async void CompletarPerfil_Clicked(object sender, EventArgs e)
+    private async void CompletarPerfil_Clicked(object? sender, EventArgs e)
     {
         await Navigation.PushAsync(new CompletarPerfilConductorPage());
     }
 
-    private async void AceptarViaje_Clicked(object sender, EventArgs e)
+    private async void AceptarViaje_Clicked(object? sender, EventArgs e)
     {
         try
         {
             if (_solicitudEnCurso != null)
             {
                 var resultado = await _transporteService.CompletarSolicitud(_solicitudEnCurso.SolicitudFleteId);
-                await DisplayAlert("MUEVE",
+                await DisplayAlertAsync("MUEVE",
                     resultado != null ? "Viaje finalizado correctamente." : "No se pudo finalizar el viaje.",
                     "Aceptar");
             }
@@ -226,14 +226,14 @@ public partial class HomeConductor : ContentPage
                 var ok = await _transporteService.AceptarSolicitudAsync(
                     _solicitudPendiente.SolicitudFleteId, _conductorId.Value, _vehiculoIdPropio.Value);
 
-                await DisplayAlert("MUEVE",
+                await DisplayAlertAsync("MUEVE",
                     ok ? "Viaje aceptado correctamente." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
                     "Aceptar");
             }
         }
         catch (Exception ex)
         {
-            await DisplayAlert("MUEVE", "No se pudo conectar con el servidor.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "No se pudo conectar con el servidor.", "Aceptar");
             System.Diagnostics.Debug.WriteLine($"Error en acción de viaje: {ex}");
         }
 
@@ -242,9 +242,9 @@ public partial class HomeConductor : ContentPage
         await CargarEstadoAsync();
     }
 
-         private async void CerrarSesion_Tapped(object sender, TappedEventArgs e)
+         private async void CerrarSesion_Tapped(object? sender, TappedEventArgs e)
          {
-             bool salir = await DisplayAlert("Cerrar sesión", "¿Deseas cerrar sesión?", "Sí", "No");
+             bool salir = await DisplayAlertAsync("Cerrar sesión", "¿Deseas cerrar sesión?", "Sí", "No");
              if (!salir) return;
 
              Preferences.Clear();
@@ -253,7 +253,7 @@ public partial class HomeConductor : ContentPage
                  app.Windows[0].Page = new NavigationPage(new LoginPage());
          }
 
-         private void OnMapPinClicked(object sender, EventArgs e)
+         private void OnMapPinClicked(object? sender, EventArgs e)
          {
              // Método vacío: el evento PinClicked no existe en MAUI Maps. Si desea manejar taps en pines,
              // suscriba al evento adecuado o gestione el clic en la vista del pin.

@@ -59,34 +59,34 @@ public partial class SeleccionarCargaPage : ContentPage
         return resultado;
     }
 
-    private async void PresetPocasCosas_Tapped(object sender, TappedEventArgs e)
+    private async void PresetPocasCosas_Tapped(object? sender, TappedEventArgs e)
         => await ConfirmarYVolver(ArmarLista(("Cajas y bultos", 3)));
 
-    private async void PresetMudanzaChica_Tapped(object sender, TappedEventArgs e)
+    private async void PresetMudanzaChica_Tapped(object? sender, TappedEventArgs e)
         => await ConfirmarYVolver(ArmarLista(("Muebles", 3), ("Cajas y bultos", 5)));
 
-    private async void PresetMudanzaGrande_Tapped(object sender, TappedEventArgs e)
+    private async void PresetMudanzaGrande_Tapped(object? sender, TappedEventArgs e)
         => await ConfirmarYVolver(ArmarLista(("Muebles", 8), ("Electrodomésticos", 3), ("Cajas y bultos", 10)));
 
-    private async void PresetMateriales_Tapped(object sender, TappedEventArgs e)
+    private async void PresetMateriales_Tapped(object? sender, TappedEventArgs e)
         => await ConfirmarYVolver(ArmarLista(("Materiales de construcción", 1)));
 
-    private void ToggleDetalle_Tapped(object sender, TappedEventArgs e)
+    private void ToggleDetalle_Tapped(object? sender, TappedEventArgs e)
         => panelDetalle.IsVisible = !panelDetalle.IsVisible;
 
-    private void Sumar_Clicked(object sender, EventArgs e)
+    private void Sumar_Clicked(object? sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is CargaItemModel item)
             item.Cantidad++;
     }
 
-    private void Restar_Clicked(object sender, EventArgs e)
+    private void Restar_Clicked(object? sender, EventArgs e)
     {
         if (sender is Button btn && btn.CommandParameter is CargaItemModel item && item.Cantidad > 0)
             item.Cantidad--;
     }
 
-    private async void ConfirmarDetalle_Clicked(object sender, EventArgs e)
+    private async void ConfirmarDetalle_Clicked(object? sender, EventArgs e)
     {
         var elegidos = _items
             .Where(i => i.Cantidad > 0)
@@ -95,7 +95,7 @@ public partial class SeleccionarCargaPage : ContentPage
 
         if (elegidos.Count == 0)
         {
-            await DisplayAlert("MUEVE", "Elegí al menos un ítem, o usá una de las opciones rápidas de arriba.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "Elegí al menos un ítem, o usá una de las opciones rápidas de arriba.", "Aceptar");
             return;
         }
 
@@ -106,7 +106,7 @@ public partial class SeleccionarCargaPage : ContentPage
     {
         if (cargas.Count == 0)
         {
-            await DisplayAlert("MUEVE", "No se pudo preparar la selección. Probá de nuevo.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "No se pudo preparar la selección. Probá de nuevo.", "Aceptar");
             return;
         }
 
