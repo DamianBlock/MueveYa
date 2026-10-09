@@ -3,6 +3,7 @@ using System;
 using AppFletesMueve.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppFletesMueve.Api.Migrations
 {
     [DbContext(typeof(MueveDbContext))]
-    partial class MueveDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261009043721_SincronizarModeloChat")]
+    partial class SincronizarModeloChat
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,7 +59,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasKey("ChatMessageId");
 
-                    b.ToTable("ChatMessages", (string)null);
+                    b.ToTable("ChatMessages");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Conductor", b =>
@@ -88,7 +91,7 @@ namespace AppFletesMueve.Api.Migrations
                     b.HasIndex("UsuarioId")
                         .IsUnique();
 
-                    b.ToTable("Conductores", (string)null);
+                    b.ToTable("Conductores");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.SolicitudCarga", b =>
@@ -120,7 +123,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasIndex("TipoCargaId");
 
-                    b.ToTable("SolicitudesCarga", (string)null);
+                    b.ToTable("SolicitudesCarga");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.SolicitudFlete", b =>
@@ -200,7 +203,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasIndex("VehiculoId");
 
-                    b.ToTable("SolicitudesFlete", (string)null);
+                    b.ToTable("SolicitudesFlete");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.TipoCarga", b =>
@@ -223,7 +226,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasKey("TipoCargaId");
 
-                    b.ToTable("TiposCarga", (string)null);
+                    b.ToTable("TiposCarga");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Usuario", b =>
@@ -264,7 +267,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasKey("UsuarioId");
 
-                    b.ToTable("Usuarios", (string)null);
+                    b.ToTable("Usuarios");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Vehiculo", b =>
@@ -318,7 +321,7 @@ namespace AppFletesMueve.Api.Migrations
                     b.HasIndex("Patente")
                         .IsUnique();
 
-                    b.ToTable("Vehiculos", (string)null);
+                    b.ToTable("Vehiculos");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Conductor", b =>
