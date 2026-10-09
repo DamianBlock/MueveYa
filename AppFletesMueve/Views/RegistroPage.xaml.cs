@@ -32,7 +32,7 @@ namespace AppFletesMueve.Views
 
             if (registrado)
             {
-                await DisplayAlertAsync(
+                await DisplayAlert(
                     "MUEVE",
                     "Usuario registrado correctamente en el API.",
                     "Aceptar");
@@ -49,7 +49,7 @@ namespace AppFletesMueve.Views
             else
             {
                 var mensaje = !string.IsNullOrWhiteSpace(error) ? error : "No se pudo conectar con el API.";
-                await DisplayAlertAsync(
+                await DisplayAlert(
                     "MUEVE",
                     mensaje,
                     "Aceptar");

@@ -4,6 +4,7 @@ using AppFletesMueve.Api.Models;
 using AppFletesMueve.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppFletesMueve.Api.Controllers
@@ -15,13 +16,16 @@ namespace AppFletesMueve.Api.Controllers
     private readonly MueveDbContext _context;
     private readonly ICalculadoraTarifas _tarifas;
     private readonly Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> _hub;
+    private readonly ILogger<SolicitudesFleteController> _logger;
 
     public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas,
-        Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> hub)
+        Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> hub,
+        ILogger<SolicitudesFleteController> logger)
         {
             _context = context;
             _tarifas = tarifas;
-        _hub = hub;
+            _hub = hub;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -72,7 +76,15 @@ namespace AppFletesMueve.Api.Controllers
             };
 
             _context.SolicitudesFlete.Add(solicitud);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error guardando nueva solicitud. Payload: {@dto}", dto);
+                throw;
+            }
 
             var resultado = await ObtenerDto(solicitud.SolicitudFleteId);
 
@@ -81,7 +93,10 @@ namespace AppFletesMueve.Api.Controllers
             {
                 await _hub.Clients.Group("drivers").SendAsync("NuevaSolicitud", resultado);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo notificar nueva solicitud por SignalR");
+            }
 
             return CreatedAtAction(nameof(ObtenerPorId),
                 new { id = solicitud.SolicitudFleteId }, resultado);
@@ -156,7 +171,15 @@ namespace AppFletesMueve.Api.Controllers
             solicitud.Estado = EstadoSolicitud.Aceptada;
             vehiculo.Disponible = false;
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al aceptar solicitud {SolicitudId} con payload {@dto}", id, dto);
+                throw;
+            }
 
             var resultadoDto = await ObtenerDto(id);
             try

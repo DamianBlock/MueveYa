@@ -24,14 +24,15 @@ public class CargaItemModel : INotifyPropertyChanged
 
 public partial class SeleccionarCargaPage : ContentPage
 {
-    private readonly TransporteService _transporteService = new();
+    private readonly TransporteService _transporteService;
     private readonly Action<List<ItemCargaRequest>> _onConfirmar;
     private ObservableCollection<CargaItemModel> _items = new();
 
-    public SeleccionarCargaPage(Action<List<ItemCargaRequest>> onConfirmar)
+    public SeleccionarCargaPage(Action<List<ItemCargaRequest>> onConfirmar, TransporteService? transporteService = null)
     {
-        InitializeComponent();
+        _transporteService = transporteService ?? new TransporteService();
         _onConfirmar = onConfirmar;
+        InitializeComponent();
     }
 
     protected override async void OnAppearing()
@@ -95,7 +96,7 @@ public partial class SeleccionarCargaPage : ContentPage
 
         if (elegidos.Count == 0)
         {
-            await DisplayAlertAsync("MUEVE", "Elegí al menos un ítem, o usá una de las opciones rápidas de arriba.", "Aceptar");
+            await DisplayAlert("MUEVE", "Elegí al menos un ítem, o usá una de las opciones rápidas de arriba.", "Aceptar");
             return;
         }
 
@@ -106,7 +107,7 @@ public partial class SeleccionarCargaPage : ContentPage
     {
         if (cargas.Count == 0)
         {
-            await DisplayAlertAsync("MUEVE", "No se pudo preparar la selección. Probá de nuevo.", "Aceptar");
+            await DisplayAlert("MUEVE", "No se pudo preparar la selección. Probá de nuevo.", "Aceptar");
             return;
         }
 

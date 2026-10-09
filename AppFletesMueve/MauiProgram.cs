@@ -25,7 +25,15 @@ namespace AppFletesMueve
             builder.Services.AddSingleton<UsuarioService>();
             builder.Services.AddSingleton<TransporteService>();
             builder.Services.AddSingleton<PlacesService>();
+            // Directions service registered for DI (also keep static Instance for backward compatibility)
+            builder.Services.AddSingleton<IDirectionsService>(DirectionsService.Instance);
+            // Register pages for DI
+            builder.Services.AddTransient<HomeCliente>();
+            builder.Services.AddTransient<HomeConductor>();
+            builder.Services.AddTransient<SeleccionarCargaPage>();
+            builder.Services.AddTransient<CompletarPerfilConductorPage>();
             builder.Services.AddTransient<RegistroPage>();
+            builder.Services.AddSingleton<IChatPageFactory, ChatPageFactory>();
 
             return builder.Build();
         }
