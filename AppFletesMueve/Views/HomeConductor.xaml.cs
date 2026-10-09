@@ -11,8 +11,10 @@ namespace AppFletesMueve.Views;
 
 public partial class HomeConductor : ContentPage
 {
-    private readonly TransporteService _transporteService = new();
+    private readonly TransporteService _transporteService;
+    private readonly IDirectionsService? _directionsService;
     private HubConnection? _hub;
+    private readonly IChatPageFactory _chatPageFactory;
 
     private int? _conductorId;
     private int? _vehiculoIdPropio;
@@ -25,8 +27,13 @@ public partial class HomeConductor : ContentPage
 
     public string Saludo { get; set; } = string.Empty;
 
-    public HomeConductor()
+    // Constructor compatible: permite inyección de servicios via DI o uso de instancias por defecto
+    public HomeConductor(TransporteService? transporteService = null, IDirectionsService? directionsService = null, IChatPageFactory? chatPageFactory = null)
     {
+        _transporteService = transporteService ?? new TransporteService();
+        _directionsService = directionsService;
+        _chatPageFactory = chatPageFactory ?? new ChatPageFactory();
+
         InitializeComponent();
         lblSaludo.Text = $"Hola, {SesionUsuario.Nombre}";
         // Añadir botón de Chat en la barra
@@ -35,31 +42,32 @@ public partial class HomeConductor : ContentPage
         ToolbarItems.Add(_chatToolbarItem);
     }
 
-    private async void ChatItem_Clicked(object? sender, EventArgs e)
-    {
-        if (_solicitudEnCurso == null && _solicitudPendiente == null)
+        private async void ChatItem_Clicked(object? sender, EventArgs e)
         {
-            await DisplayAlertAsync("Chat", "No hay solicitud activa o pendiente para chatear.", "Aceptar");
-            return;
-        }
+            if (_solicitudEnCurso == null && _solicitudPendiente == null)
+            {
+                await DisplayAlert("Chat", "No hay solicitud activa o pendiente para chatear.", "Aceptar");
+                return;
+            }
 
-        var solicitudId = _solicitudEnCurso?.SolicitudFleteId ?? _solicitudPendiente?.SolicitudFleteId;
-        if (solicitudId == null)
-        {
-            await DisplayAlertAsync("Chat", "No se pudo determinar la solicitud.", "Aceptar");
-            return;
-        }
+            var solicitudId = _solicitudEnCurso?.SolicitudFleteId ?? _solicitudPendiente?.SolicitudFleteId;
+            if (solicitudId == null)
+            {
+                await DisplayAlert("Chat", "No se pudo determinar la solicitud.", "Aceptar");
+                return;
+            }
 
-        var group = $"solicitud-{solicitudId}";
-        var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
-        if (_hub == null)
-        {
-            await DisplayAlertAsync("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
-            return;
-        }
+            var group = $"solicitud-{solicitudId}";
+            var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
+            if (_hub == null)
+            {
+                await DisplayAlert("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
+                return;
+            }
 
-        await Navigation.PushAsync(new ChatPage(_hub, group, user));
-    }
+            var chatPage = _chatPageFactory.Create(_hub, group, user);
+            await Navigation.PushAsync(chatPage);
+        }
 
     protected override async void OnAppearing()
     {
@@ -69,12 +77,12 @@ public partial class HomeConductor : ContentPage
         // Inicializar SignalR para recibir solicitudes en tiempo real
         try
         {
-            if (_hub == null)
-            {
-                _hub = new HubConnectionBuilder()
-                    .WithUrl(TransporteService.HubUrl)
-                    .WithAutomaticReconnect()
-                    .Build();
+                if (_hub == null)
+                {
+                    _hub = new HubConnectionBuilder()
+                        .WithUrl(TransporteService.HubUrl)
+                        .WithAutomaticReconnect()
+                        .Build();
 
                 _hub.On<SolicitudFleteDto>("NuevaSolicitud", solicitud =>
                 {
@@ -348,7 +356,7 @@ public partial class HomeConductor : ContentPage
         // Intentar obtener ruta real via OSRM, con fallback a línea directa
         try
         {
-            var puntos = await AppFletesMueve.Services.DirectionsService.GetRoutePointsAsync(origen.Latitude, origen.Longitude, destino.Latitude, destino.Longitude);
+            var puntos = await _directionsService.GetRoutePointsAsync(origen.Latitude, origen.Longitude, destino.Latitude, destino.Longitude);
             var poly = new Polyline
             {
                 StrokeColor = Color.FromArgb("#E65100"),

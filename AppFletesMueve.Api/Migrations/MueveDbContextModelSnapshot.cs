@@ -226,6 +226,45 @@ namespace AppFletesMueve.Api.Migrations
                     b.ToTable("TiposCarga", (string)null);
                 });
 
+            modelBuilder.Entity("AppFletesMueve.Api.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("ChatMessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ChatMessageId"));
+
+                    b.Property<int>("SolicitudFleteId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Sender")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReadTimestampUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReadBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("ChatMessageId");
+
+                    b.HasIndex("SolicitudFleteId");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("AppFletesMueve.Api.Models.Usuario", b =>
                 {
                     b.Property<int>("UsuarioId")

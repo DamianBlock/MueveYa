@@ -1,5 +1,8 @@
 using AppFletesMueve.Models;
 using AppFletesMueve.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.Hosting;
+using System;
 
 namespace AppFletesMueve.Views;
 
@@ -22,7 +25,7 @@ public partial class LoginPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync(
+            await DisplayAlert(
                 "Error de conexión",
                 "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.",
                 "Aceptar");
@@ -32,7 +35,7 @@ public partial class LoginPage : ContentPage
 
         if (usuario == null)
         {
-            await DisplayAlertAsync("Error", "Usuario o contraseña incorrectos", "Aceptar");
+            await DisplayAlert("Error", "Usuario o contraseña incorrectos", "Aceptar");
             return;
         }
 
@@ -49,9 +52,26 @@ public partial class LoginPage : ContentPage
         var app = Application.Current;
         if (app?.Windows?.Count > 0)
         {
-            app.Windows[0].Page = usuario.TipoUsuario == "CLIENTE"
-                ? new NavigationPage(new HomeCliente())
-                : new NavigationPage(new HomeConductor());
+            // Resolver páginas desde el contenedor DI si está disponible
+            var services = Application.Current?.Handler?.MauiContext?.Services;
+            Page targetPage;
+            if (usuario.TipoUsuario == "CLIENTE")
+            {
+                var home = services?.GetService<HomeCliente>()
+                           ?? new HomeCliente(
+                                DirectionsService.Instance,
+                                services?.GetService<TransporteService>() ?? new TransporteService(),
+                                services?.GetService<PlacesService>() ?? new PlacesService(),
+                                services?.GetService<IChatPageFactory>() ?? new ChatPageFactory());
+                targetPage = new NavigationPage(home);
+            }
+            else
+            {
+                var conductor = services?.GetService<HomeConductor>() ?? new HomeConductor();
+                targetPage = new NavigationPage(conductor);
+            }
+
+            app.Windows[0].Page = targetPage;
         }
     }
 

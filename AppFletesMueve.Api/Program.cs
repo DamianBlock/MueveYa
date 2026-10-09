@@ -2,6 +2,7 @@ using AppFletesMueve.Api.Data;
 using AppFletesMueve.Api.Models;
 using AppFletesMueve.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +17,8 @@ var connectionString = !string.IsNullOrWhiteSpace(databaseUrl)
     : builder.Configuration.GetConnectionString("DefaultConnection")!;
 
 builder.Services.AddDbContext<MueveDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString)
+           .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
@@ -28,7 +30,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MueveDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetService(typeof(Microsoft.Extensions.Logging.ILogger<Program>)) as Microsoft.Extensions.Logging.ILogger;
+        logger?.LogError(ex, "Fallo al aplicar migraciones en arranque");
+        // No re-lanzar para evitar que la aplicación se cierre en producción durante diagnóstico
+    }
 
     if (!db.TiposCarga.Any())
     {

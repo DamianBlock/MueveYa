@@ -22,7 +22,9 @@ namespace AppFletesMueve.Views
         private readonly string _groupName;
         private readonly string _userName;
         private readonly ObservableCollection<ChatMessage> _messages = new();
+#pragma warning disable 618
         private ListView _listView;
+#pragma warning restore 618
 
         private int _pageSize = 50;
         private int _loaded = 0;
