@@ -26,6 +26,7 @@ namespace AppFletesMueve.Services
         public double LatitudDestino { get; set; }
         public double LongitudDestino { get; set; }
         public double DistanciaKm { get; set; }
+        public string TipoVehiculo { get; set; } = "Utilitario";
         public List<ItemCargaRequest> Cargas { get; set; } = new();
     }
 
@@ -49,6 +50,7 @@ namespace AppFletesMueve.Services
         public double DistanciaKm { get; set; }
         public decimal Precio { get; set; }
         public string Estado { get; set; } = string.Empty;
+        public string TipoVehiculo { get; set; } = string.Empty;
         public List<CargaDto> Cargas { get; set; } = new();
     }
 
@@ -56,7 +58,31 @@ namespace AppFletesMueve.Services
 
     public class ConductorDto { public int ConductorId { get; set; } public int UsuarioId { get; set; } public string Nombre { get; set; } = string.Empty; public bool Disponible { get; set; } }
 
-    public class VehiculoOpcionDto { public int VehiculoId { get; set; } public int ConductorId { get; set; } public string Nombre { get; set; } = string.Empty; public double Precio { get; set; } public string? Imagen { get; set; } }
+    public class CotizarTarifaRequest
+    {
+        public string TipoServicio { get; set; } = "Inmediato";
+        public double DistanciaKm { get; set; }
+        public List<ItemCargaRequest> Cargas { get; set; } = new();
+    }
+
+    public class OpcionTarifaDto
+    {
+        public string TipoVehiculo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public decimal Precio { get; set; }
+        public double CapacidadKg { get; set; }
+        public double CapacidadM3 { get; set; }
+        public bool Entra { get; set; }
+        public bool Sugerido { get; set; }
+    }
+
+    public class CotizacionDto
+    {
+        public double PesoTotalKg { get; set; }
+        public double VolumenTotalM3 { get; set; }
+        public int MinutosEspera { get; set; }
+        public List<OpcionTarifaDto> Opciones { get; set; } = new();
+    }
 
     public class TransporteService
     {
@@ -131,6 +157,29 @@ namespace AppFletesMueve.Services
                 return null;
             }
         }
+        public async Task<CotizacionDto?> CotizarAsync(double distanciaKm, string tipoServicio, List<ItemCargaRequest> cargas)
+        {
+            try
+            {
+                var request = new CotizarTarifaRequest
+                {
+                    TipoServicio = tipoServicio,
+                    DistanciaKm = distanciaKm,
+                    Cargas = cargas
+                };
+
+                var response = await _httpClient.PostAsJsonAsync(ApiUrl + "Tarifas/cotizar", request);
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                return await response.Content.ReadFromJsonAsync<CotizacionDto>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al cotizar: {ex}");
+                return null;
+            }
+        }
 
         public async Task<SolicitudFleteDto?> AceptarSolicitud(int solicitudId, int conductorId, int vehiculoId)
         {
@@ -160,27 +209,7 @@ namespace AppFletesMueve.Services
             }
             catch { return null; }
         }
-
-        public async Task<List<VehiculoOpcionDto>> ObtenerOpcionesVehiculoAsync(double origenLat, double origenLon, double destinoLat, double destinoLon)
-        {
-            try
-            {
-                var resultado = await _httpClient.GetFromJsonAsync<List<VehiculoOpcionDto>>(ApiUrl + $"Tarifas/opciones?origenLat={origenLat}&origenLon={origenLon}&destinoLat={destinoLat}&destinoLon={destinoLon}");
-                if (resultado != null) return resultado;
-            }
-            catch { }
-
-            var vehiculos = await ObtenerVehiculosDisponibles();
-            var distancia = HaversineDistanceKm(origenLat, origenLon, destinoLat, destinoLon);
-            var lista = new List<VehiculoOpcionDto>();
-            foreach (var v in vehiculos.Where(x => x.Disponible))
-            {
-                var precio = CalcularPrecioEstimado(distancia, v);
-                lista.Add(new VehiculoOpcionDto { VehiculoId = v.VehiculoId, ConductorId = v.ConductorId, Nombre = $"{v.Marca} {v.Modelo}", Precio = precio, Imagen = v.Imagen });
-            }
-            return lista;
-        }
-
+        
         public static double HaversineDistanceKm(double lat1, double lon1, double lat2, double lon2)
         {
             double R = 6371; // km

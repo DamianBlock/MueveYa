@@ -5,6 +5,8 @@
              xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
              x:Class="AppFletesMueve.Views.HomeCliente"
              x:Name="PaginaPrincipal"
+             xmlns:models="clr-namespace:AppFletesMueve.Models"
+             xmlns:vm="clr-namespace:AppFletesMueve.ViewModels"
              BackgroundColor="#F5F5F5"
              NavigationPage.HasNavigationBar="False">
 
@@ -184,79 +186,174 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Label Text="Selecciona el tipo de carga" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
+                    <Label Text="¿Qué vas a trasladar?" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
 
-                    <Button Text="Elegir carga" BackgroundColor="#E65100" TextColor="White" CornerRadius="10" Clicked="ElegirCarga_Clicked"/>
+                    <Label x:Name="lblCargaResumen"
+                       Text="Todavía no elegiste carga"
+                       FontSize="13"
+                       TextColor="Gray"/>
 
-                    <CollectionView
-                        ItemsSource="{Binding Vehiculos}"
-                        HeightRequest="180"
-                        SelectionMode="Single"
-                        SelectedItem="{Binding VehiculoSeleccionado}"
-                        SelectionChanged="Vehiculos_SelectionChanged">
+                    <Button Text="Elegir / editar carga"
+                        BackgroundColor="White"
+                        TextColor="#E65100"
+                        BorderColor="#E65100"
+                        BorderWidth="1"
+                        CornerRadius="10"
+                        Clicked="ElegirCarga_Clicked"/>
 
-                        <CollectionView.ItemsLayout>
-                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12"/>
-                        </CollectionView.ItemsLayout>
-
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border
-                                    Stroke="#E65100"
-                                    StrokeThickness="2"
-                                    StrokeShape="RoundRectangle 10"
-                                    WidthRequest="140"
-                                    Padding="10">
-
-                                    <VisualStateManager.VisualStateGroups>
-                                        <VisualStateGroup Name="CommonStates">
-                                            <VisualState Name="Normal">
-                                                <VisualState.Setters>
-                                                    <Setter Property="Stroke" Value="#E65100" />
-                                                    <Setter Property="StrokeThickness" Value="2" />
-                                                    <Setter Property="BackgroundColor" Value="#FFFFFF" />
-                                                </VisualState.Setters>
-                                            </VisualState>
-                                            <VisualState Name="Selected">
-                                                <VisualState.Setters>
-                                                    <Setter Property="Stroke" Value="#FFB74D" />
-                                                    <Setter Property="StrokeThickness" Value="3" />
-                                                    <Setter Property="BackgroundColor" Value="#FFF3E0" />
-                                                </VisualState.Setters>
-                                            </VisualState>
-                                        </VisualStateGroup>
-                                    </VisualStateManager.VisualStateGroups>
-
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={x:Reference PaginaPrincipal}, Path=BindingContext.SeleccionarVehiculoCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-
-                                    <VerticalStackLayout>
-                                        <Image Source="{Binding Imagen}" HeightRequest="60"/>
-                                        <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center"/>
-                                        <Label Text="{Binding Precio, StringFormat='${0} MXN'}" TextColor="#E65100" HorizontalTextAlignment="Center"/>
-                                        <Button Text="Solicitar" BackgroundColor="#E65100" TextColor="White" CornerRadius="8" CommandParameter="{Binding .}" Clicked="Solicitar_Clicked"/>
-                                    </VerticalStackLayout>
-
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-
-                    </CollectionView>
-
-                    <Button
-                        Text="{Binding TextoBotonConfirmar}"
-                        Command="{Binding ConfirmarFleteCommand}"
+                    <Button x:Name="btnCalcularTarifa"
+                        Text="Calcular tarifa"
                         BackgroundColor="#E65100"
-                        TextColor="White"/>
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        HeightRequest="55"
+                        CornerRadius="12"
+                        Clicked="CalcularTarifa_Clicked"/>
 
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
 
         </ScrollView>
+        
+        <!-- OVERLAY: FONDO DEL SHEET DE COTIZACIÓN -->
+        <BoxView
+            x:Name="fondoCotizacion"
+            BackgroundColor="#80000000"
+            IsVisible="False">  
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="CerrarCotizacion_Tapped"/>
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- BOTTOM SHEET: TARIFAS POR VEHÍCULO -->
+        <Border
+            x:Name="sheetCotizacion"
+            x:DataType="vm:CotizacionViewModel"
+            IsVisible="False"
+            VerticalOptions="End"
+            BackgroundColor="White"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 24,24,0,0"
+            Padding="16,10,16,16">
+
+            <VerticalStackLayout Spacing="10">
+
+                <!-- Cabecera: deslizar hacia abajo para cerrar -->
+                <VerticalStackLayout Spacing="8">
+                    <VerticalStackLayout.GestureRecognizers>
+                        <SwipeGestureRecognizer Direction="Down" Swiped="SheetCotizacion_Swiped"/>
+                    </VerticalStackLayout.GestureRecognizers>
+
+                    <BoxView HeightRequest="4"
+                         WidthRequest="40"
+                         CornerRadius="2"
+                         Color="#D0D0D0"
+                         HorizontalOptions="Center"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Elegí tu vehículo"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="Black"/>
+                            <Label Text="{Binding ResumenViaje}"
+                           FontSize="12"
+                           TextColor="#757575"/>
+                        </VerticalStackLayout>
+
+                        <Label Grid.Column="1"
+                       Text="✕"
+                       FontSize="20"
+                       Padding="8"
+                       TextColor="Gray"
+                       VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="CerrarCotizacion_Tapped"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </VerticalStackLayout>
+
+                <Label Text="{Binding MensajeSinOpciones}"
+               IsVisible="{Binding SinOpciones}"
+               TextColor="#D32F2F"
+               FontSize="13"/>
+
+                <ScrollView MaximumHeightRequest="300">
+                    <VerticalStackLayout Spacing="8"
+                                 BindableLayout.ItemsSource="{Binding Opciones}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:CotizacionVehiculo">
+                                <Border StrokeShape="RoundRectangle 12"
+                                StrokeThickness="2"
+                                Stroke="{Binding ColorBorde}"
+                                BackgroundColor="{Binding ColorFondo}"
+                                Opacity="{Binding Opacidad}"
+                                Padding="10">
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OpcionVehiculo_Tapped"/>
+                                    </Border.GestureRecognizers>
+
+                                    <Grid ColumnDefinitions="70,*,Auto" ColumnSpacing="10">
+
+                                        <Image Source="{Binding Imagen}"
+                                       HeightRequest="45"
+                                       WidthRequest="60"/>
+
+                                        <VerticalStackLayout Grid.Column="1"
+                                                     VerticalOptions="Center">
+                                            <Label Text="{Binding Nombre}"
+                                           FontAttributes="Bold"
+                                           TextColor="Black"/>
+                                            <Label Text="{Binding Detalle}"
+                                           FontSize="11"
+                                           TextColor="Gray"/>
+                                            <Label Text="{Binding Etiqueta}"
+                                           IsVisible="{Binding TieneEtiqueta}"
+                                           FontSize="11"
+                                           FontAttributes="Bold"
+                                           TextColor="{Binding ColorEtiqueta}"/>
+                                        </VerticalStackLayout>
+
+                                        <Label Grid.Column="2"
+                                       Text="{Binding PrecioTexto}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="#212121"
+                                       VerticalOptions="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Button Text="{Binding TextoConfirmar}"
+                    IsEnabled="{Binding PuedeConfirmar}"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    HeightRequest="55"
+                    CornerRadius="12"
+                    Clicked="ConfirmarFlete_Clicked">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup Name="CommonStates">
+                            <VisualState Name="Normal">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="#2E7D32" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState Name="Disabled">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="#BDBDBD" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                </Button>
+            </VerticalStackLayout>
+        </Border>
 
         <!-- OVERLAY: FONDO OSCURO -->
         <BoxView

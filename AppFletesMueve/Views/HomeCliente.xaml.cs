@@ -34,13 +34,14 @@ namespace AppFletesMueve.Views
         private HubConnection? _hubCliente;
         private int? _solicitudActivaId;
         private Pin? _pinConductor;
+        private readonly CotizacionViewModel _cotizacionVm = new();
 
         public HomeCliente()
         {
             InitializeComponent();
-            BindingContext = new MainViewModel();
-            string nombre = Preferences.Get("Nombre", "Cliente");
+            sheetCotizacion.BindingContext = _cotizacionVm;
 
+            string nombre = Preferences.Get("Nombre", "Cliente");
             lblBienvenida.Text = $"Hola, {nombre}";
 
             // Añadir botón de Chat en la barra de la página
@@ -100,7 +101,6 @@ namespace AppFletesMueve.Views
                     System.Diagnostics.Debug.WriteLine($"No se pudo obtener ubicación: {ex}");
                 }
             }
-
             // Inicializar conexión SignalR para recibir actualizaciones del conductor
             try
             {
@@ -260,15 +260,7 @@ namespace AppFletesMueve.Views
             }
         }
 
-        // Badge de chat gestionado por SignalR (UnreadCountUpdated)
-
-        private void Vehiculos_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            if (BindingContext is ViewModels.MainViewModel vm)
-            {
-                vm.VehiculoSeleccionado = e.CurrentSelection?.FirstOrDefault() as Models.VehiculoModel;
-            }
-        }
+        // Badge de chat gestionado por SignalR (UnreadCountUpdated)           
 
         private async void AbrirRegistro_Clicked(object? sender, EventArgs e)
         {
@@ -390,40 +382,12 @@ namespace AppFletesMueve.Views
             await DisplayAlertAsync("MUEVE", "Sección de promos en construcción.", "Aceptar");
         }
 
-        private async Task ActualizarDestinoAsync(Location destino, string etiqueta)
+        private Task ActualizarDestinoAsync(Location destino, string etiqueta)
         {
             _ultimoDestino = destino;
             lblDestinoResumen.Text = etiqueta;
             ActualizarTrayecto();
-
-            try
-            {
-
-                var origenLat = _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0);
-                var origenLon = _ultimoOrigen?.Longitude ?? Preferences.Get("UltimaLon", 0.0);
-
-                var opciones = await _transporteService.ObtenerOpcionesVehiculoAsync(origenLat, origenLon, destino.Latitude, destino.Longitude);
-
-                if (BindingContext is MainViewModel vm)
-                {
-                    vm.Vehiculos.Clear();
-                    foreach (var o in opciones)
-                    {
-                        vm.Vehiculos.Add(new Models.VehiculoModel
-                        {
-                            Id = o.VehiculoId,
-                            Nombre = o.Nombre,
-                            Imagen = o.Imagen ?? "pickup_truck.png",
-                            Precio = Convert.ToDecimal(o.Precio),
-                            Info = "Opción"
-                        });
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                await DisplayAlertAsync("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
-            }
+            return Task.CompletedTask;
         }
 
         private async void TxtOrigen_TextChanged(object? sender, TextChangedEventArgs e)
@@ -476,7 +440,10 @@ namespace AppFletesMueve.Views
             await Navigation.PushAsync(new SeleccionarCargaPage(cargas =>
             {
                 _cargaSeleccionada = cargas;
-            }));
+
+                var total = cargas.Sum(c => c.Cantidad);
+                lblCargaResumen.Text = total == 1 ? "1 ítem seleccionado" : $"{total} ítems seleccionados";
+            }, _cargaSeleccionada));
         }
         private async void TxtDestino_TextChanged(object? sender, TextChangedEventArgs e)
         {
@@ -502,15 +469,13 @@ namespace AppFletesMueve.Views
 
         private async void SugerenciaDestino_Tapped(object? sender, TappedEventArgs e)
         {
-           
-
             if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
                 return;
 
-            _debounceCtsOrigen?.Cancel();
-            listaSugerenciasOrigen.IsVisible = false;
-            _origenDescripcionSeleccionada = sugerencia.Description;
-            txtOrigen.Text = sugerencia.Description;
+            _debounceCtsDestino?.Cancel();
+            listaSugerencias.IsVisible = false;
+            _destinoDescripcionSeleccionada = sugerencia.Description;
+            txtDestino.Text = sugerencia.Description;
 
             var detalle = await _placesService.ObtenerDetalleAsync(sugerencia.PlaceId);
             if (detalle is null)
@@ -586,7 +551,8 @@ namespace AppFletesMueve.Views
                     System.Diagnostics.Debug.WriteLine(ex);
                 }
             }
-        }
+        }     
+
         private void ElegirOrigenEnMapa_Clicked(object? sender, EventArgs e)
         {
             _eligiendoOrigenEnMapa = true;
@@ -694,5 +660,146 @@ namespace AppFletesMueve.Views
             var radioKm = Math.Max(distanciaKm * 0.75, 0.5);
             mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(centro, Distance.FromKilometers(radioKm)));
         }
+        private (double lat, double lon) ObtenerOrigen()
+        {
+            return (
+                _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0),
+                _ultimoOrigen?.Longitude ?? Preferences.Get("UltimaLon", 0.0));
+        }
+
+        private async void CalcularTarifa_Clicked(object? sender, EventArgs e)
+        {
+            if (_ultimoDestino is not { } destino)
+            {
+                await DisplayAlertAsync("MUEVE", "Primero buscá y seleccioná un destino.", "Aceptar");
+                return;
+            }
+
+            if (_cargaSeleccionada.Count == 0)
+            {
+                await DisplayAlertAsync("MUEVE", "Primero indicá qué vas a trasladar.", "Aceptar");
+                return;
+            }
+
+            var (origenLat, origenLon) = ObtenerOrigen();
+            if (origenLat == 0 && origenLon == 0)
+            {
+                await DisplayAlertAsync("MUEVE", "Indicá el origen del viaje.", "Aceptar");
+                return;
+            }
+
+            var distanciaKm = Math.Max(
+                TransporteService.HaversineDistanceKm(origenLat, origenLon, destino.Latitude, destino.Longitude),
+                0.1);
+
+            btnCalcularTarifa.IsEnabled = false;
+            try
+            {
+                var cotizacion = await _transporteService.CotizarAsync(distanciaKm, "Inmediato", _cargaSeleccionada);
+                if (cotizacion == null)
+                {
+                    await DisplayAlertAsync("MUEVE", "No se pudo calcular la tarifa. Probá de nuevo.", "Aceptar");
+                    return;
+                }
+
+                _cotizacionVm.Cargar(cotizacion, distanciaKm);
+                btnCalcularTarifa.Text = "Recalcular tarifa";
+                await MostrarCotizacionAsync();
+            }
+            finally
+            {
+                btnCalcularTarifa.IsEnabled = true;
+            }
+        }
+
+        private async Task MostrarCotizacionAsync()
+        {
+            sheetCotizacion.TranslationY = Math.Max(Height, 700);
+            fondoCotizacion.IsVisible = true;
+            sheetCotizacion.IsVisible = true;
+            await sheetCotizacion.TranslateToAsync(0, 0, 300, Easing.CubicOut);
+        }
+
+        private async Task OcultarCotizacionAsync()
+        {
+            if (!sheetCotizacion.IsVisible)
+                return;
+
+            await sheetCotizacion.TranslateToAsync(0, Math.Max(Height, 700), 250, Easing.CubicIn);
+            sheetCotizacion.IsVisible = false;
+            fondoCotizacion.IsVisible = false;
+        }
+
+        private void OpcionVehiculo_Tapped(object? sender, TappedEventArgs e)
+        {
+            if (sender is BindableObject bo && bo.BindingContext is CotizacionVehiculo opcion)
+                _cotizacionVm.Seleccionar(opcion);
+        }
+
+        private async void CerrarCotizacion_Tapped(object? sender, TappedEventArgs e)
+        {
+            await OcultarCotizacionAsync();
+        }
+
+        private async void SheetCotizacion_Swiped(object? sender, SwipedEventArgs e)
+        {
+            await OcultarCotizacionAsync();
+        }
+
+        private async void ConfirmarFlete_Clicked(object? sender, EventArgs e)
+        {
+            if (_cotizacionVm.Seleccionado is not { } elegido || _ultimoDestino is not { } destino)
+                return;
+
+            var (origenLat, origenLon) = ObtenerOrigen();
+
+            var request = new CrearSolicitudFleteRequest
+            {
+                ClienteId = SesionUsuario.UsuarioId,
+                TipoServicio = "Inmediato",
+                TipoVehiculo = elegido.TipoVehiculo,
+                DireccionOrigen = !string.IsNullOrWhiteSpace(lblOrigenResumen.Text) ? lblOrigenResumen.Text : "Mi ubicación",
+                LatitudOrigen = origenLat,
+                LongitudOrigen = origenLon,
+                DireccionDestino = !string.IsNullOrWhiteSpace(lblDestinoResumen.Text) ? lblDestinoResumen.Text : string.Empty,
+                LatitudDestino = destino.Latitude,
+                LongitudDestino = destino.Longitude,
+                DistanciaKm = _cotizacionVm.DistanciaKm,
+                Cargas = _cargaSeleccionada
+            };
+
+            _cotizacionVm.EstaProcesando = true;
+            try
+            {
+                var resultado = await _transporteService.CrearSolicitud(request);
+                if (resultado == null)
+                {
+                    await DisplayAlertAsync("MUEVE", "No se pudo crear la solicitud.", "Aceptar");
+                    return;
+                }
+
+                _solicitudActivaId = resultado.SolicitudFleteId;
+
+                // Unirse al grupo de la solicitud (seguimiento del conductor y chat)
+                if (_hubCliente != null && _hubCliente.State == HubConnectionState.Connected)
+                {
+                    try
+                    {
+                        await _hubCliente.SendAsync("JoinGroup", $"solicitud-{_solicitudActivaId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo de la solicitud: {ex}");
+                    }
+                }
+
+                await OcultarCotizacionAsync();
+                await DisplayAlertAsync("MUEVE", $"Solicitud creada. Total: $ {resultado.Precio:N0}", "Aceptar");
+            }
+            finally
+            {
+                _cotizacionVm.EstaProcesando = false;
+            }
+        }              
     }
 }

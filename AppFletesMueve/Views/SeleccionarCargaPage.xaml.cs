@@ -5,6 +5,7 @@ using AppFletesMueve.Services;
 
 namespace AppFletesMueve.Views;
 
+
 public class CargaItemModel : INotifyPropertyChanged
 {
     public int TipoCargaId { get; set; }
@@ -27,11 +28,14 @@ public partial class SeleccionarCargaPage : ContentPage
     private readonly TransporteService _transporteService = new();
     private readonly Action<List<ItemCargaRequest>> _onConfirmar;
     private ObservableCollection<CargaItemModel> _items = new();
+    private readonly List<ItemCargaRequest> _cargaInicial;
 
-    public SeleccionarCargaPage(Action<List<ItemCargaRequest>> onConfirmar)
+
+    public SeleccionarCargaPage(Action<List<ItemCargaRequest>> onConfirmar, List<ItemCargaRequest>? cargaActual = null)
     {
         InitializeComponent();
         _onConfirmar = onConfirmar;
+        _cargaInicial = cargaActual ?? new List<ItemCargaRequest>();
     }
 
     protected override async void OnAppearing()
@@ -44,6 +48,15 @@ public partial class SeleccionarCargaPage : ContentPage
             _items = new ObservableCollection<CargaItemModel>(
                 tipos.Select(t => new CargaItemModel { TipoCargaId = t.TipoCargaId, Nombre = t.Nombre, Cantidad = 0 }));
             listaTiposCarga.ItemsSource = _items;
+            foreach (var previa in _cargaInicial)
+            {
+                var item = _items.FirstOrDefault(i => i.TipoCargaId == previa.TipoCargaId);
+                if (item != null)
+                    item.Cantidad = previa.Cantidad;
+            }
+
+            // Si ya había carga, abrir directo el detalle para editar
+            panelDetalle.IsVisible = _cargaInicial.Count > 0;
         }
     }
 
