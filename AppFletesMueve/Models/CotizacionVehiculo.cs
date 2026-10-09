@@ -28,9 +28,12 @@
         // Imágenes que ya usás en la app
         public string Imagen => TipoVehiculo switch
         {
-            "CamionGrande" => "large_truck.png",
-            "CamionMediano" or "CamionChico" => "medium_truck.png",
-            _ => "pickup_truck.png"
+            "Utilitario" => "utilitario.png",
+            "Camioneta" => "camioneta.png",
+            "CamionChico" => "camion_chico.png",
+            "CamionMediano" => "camion_mediano.png",
+            "CamionGrande" => "camion_grande.png",
+            _ => "camioneta.png"
         };
 
         public string PrecioTexto => $"$ {Precio:N0}";

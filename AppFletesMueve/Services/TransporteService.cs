@@ -57,7 +57,7 @@ namespace AppFletesMueve.Services
     public class TipoCargaDto { public int TipoCargaId { get; set; } public string Nombre { get; set; } = string.Empty; public double PesoEstimadoKg { get; set; } public double VolumenEstimadoM3 { get; set; } }
 
     public class ConductorDto { public int ConductorId { get; set; } public int UsuarioId { get; set; } public string Nombre { get; set; } = string.Empty; public bool Disponible { get; set; } }
-
+    public class ErrorApiDto { public string? Mensaje { get; set; } }
     public class CotizarTarifaRequest
     {
         public string TipoServicio { get; set; } = "Inmediato";
@@ -134,10 +134,66 @@ namespace AppFletesMueve.Services
             try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}/activa"); }
             catch { return null; }
         }
-        public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes()
+        public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes(string? tipoVehiculo = null)
         {
-            try { var r = await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + "SolicitudesFlete/pendientes"); return r ?? new List<SolicitudFleteDto>(); }
+            try
+            {
+                var url = ApiUrl + "SolicitudesFlete/pendientes";
+                if (!string.IsNullOrEmpty(tipoVehiculo))
+                    url += $"?tipo={Uri.EscapeDataString(tipoVehiculo)}";
+
+                var r = await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(url);
+                return r ?? new List<SolicitudFleteDto>();
+            }
             catch { return new List<SolicitudFleteDto>(); }
+        }
+
+        public async Task<(bool Ok, string? Mensaje)> ActivarConductorAsync(int conductorId, int vehiculoId, double? latitud, double? longitud)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync(
+                    ApiUrl + $"Conductores/{conductorId}/activar",
+                    new { VehiculoId = vehiculoId, Latitud = latitud, Longitud = longitud });
+
+                if (response.IsSuccessStatusCode)
+                    return (true, null);
+
+                return (false, await LeerMensajeAsync(response));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al activar conductor: {ex}");
+                return (false, "No se pudo conectar con el servidor.");
+            }
+        }
+
+        public async Task<(bool Ok, string? Mensaje)> DesactivarConductorAsync(int conductorId)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsync(ApiUrl + $"Conductores/{conductorId}/desactivar", null);
+
+                if (response.IsSuccessStatusCode)
+                    return (true, null);
+
+                return (false, await LeerMensajeAsync(response));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al desactivar conductor: {ex}");
+                return (false, "No se pudo conectar con el servidor.");
+            }
+        }
+
+        private static async Task<string?> LeerMensajeAsync(HttpResponseMessage response)
+        {
+            try
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorApiDto>();
+                return error?.Mensaje;
+            }
+            catch { return null; }
         }
 
         public async Task<SolicitudFleteDto?> CrearSolicitud(CrearSolicitudFleteRequest request)

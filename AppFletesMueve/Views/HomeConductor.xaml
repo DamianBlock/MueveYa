@@ -28,7 +28,7 @@
                                FontSize="24"
                                FontAttributes="Bold"
                                TextColor="Black"/>
-                        <Label Text="Tenés viajes disponibles cerca tuyo"
+                        <Label Text="Panel del conductor"
                                FontSize="14"
                                TextColor="Gray"/>
                     </VerticalStackLayout>
@@ -45,7 +45,29 @@
                     </Label>
                 </Grid>
             </Border>
+            <!-- ESTADO DEL SERVICIO -->
+            <Border Margin="15,0"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label x:Name="lblEstadoServicio"
+                           Text="Fuera de servicio"
+                           FontAttributes="Bold"
+                           FontSize="16"
+                           TextColor="#757575"/>
 
+                    <Button x:Name="btnServicio"
+                            Text="INICIAR"
+                            BackgroundColor="#2E7D32"
+                            TextColor="White"
+                            FontAttributes="Bold"
+                            HeightRequest="50"
+                            CornerRadius="12"
+                            Clicked="Servicio_Clicked"/>
+                </VerticalStackLayout>
+            </Border>
             <!-- MAPA CONDUCTOR -->
             <Border Margin="15,0"
                     StrokeShape="RoundRectangle 12"
