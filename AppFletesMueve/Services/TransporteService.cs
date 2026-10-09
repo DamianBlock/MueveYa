@@ -69,6 +69,8 @@ namespace AppFletesMueve.Services
         private const string ApiUrl = "https://mueveya.onrender.com/api/";
 #endif
 
+        public static string HubUrl => ApiUrl.Replace("/api/", "/hubs/solicitudes");
+
         public TransporteService() { _httpClient = new HttpClient(); }
 
         private static async Task<string> LeerMensajeError(HttpResponseMessage response)

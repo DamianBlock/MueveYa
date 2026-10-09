@@ -21,6 +21,7 @@ public partial class HomeConductor : ContentPage
 
     private SolicitudFleteDto? _solicitudPendiente;
     private SolicitudFleteDto? _solicitudEnCurso;
+    private CancellationTokenSource? _ubicacionCts;
 
     public string Saludo { get; set; } = string.Empty;
 
@@ -28,6 +29,36 @@ public partial class HomeConductor : ContentPage
     {
         InitializeComponent();
         lblSaludo.Text = $"Hola, {SesionUsuario.Nombre}";
+        // Añadir botón de Chat en la barra
+        _chatToolbarItem = new ToolbarItem { Text = "Chat", Order = ToolbarItemOrder.Primary };
+        _chatToolbarItem.Clicked += ChatItem_Clicked;
+        ToolbarItems.Add(_chatToolbarItem);
+    }
+
+    private async void ChatItem_Clicked(object? sender, EventArgs e)
+    {
+        if (_solicitudEnCurso == null && _solicitudPendiente == null)
+        {
+            await DisplayAlertAsync("Chat", "No hay solicitud activa o pendiente para chatear.", "Aceptar");
+            return;
+        }
+
+        var solicitudId = _solicitudEnCurso?.SolicitudFleteId ?? _solicitudPendiente?.SolicitudFleteId;
+        if (solicitudId == null)
+        {
+            await DisplayAlertAsync("Chat", "No se pudo determinar la solicitud.", "Aceptar");
+            return;
+        }
+
+        var group = $"solicitud-{solicitudId}";
+        var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
+        if (_hub == null)
+        {
+            await DisplayAlertAsync("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
+            return;
+        }
+
+        await Navigation.PushAsync(new ChatPage(_hub, group, user));
     }
 
     protected override async void OnAppearing()
@@ -41,7 +72,7 @@ public partial class HomeConductor : ContentPage
             if (_hub == null)
             {
                 _hub = new HubConnectionBuilder()
-                    .WithUrl("https://tu-servidor/api/hubs/solicitudes")
+                    .WithUrl(TransporteService.HubUrl)
                     .WithAutomaticReconnect()
                     .Build();
 
@@ -70,10 +101,59 @@ public partial class HomeConductor : ContentPage
                 });
 
                 // Suscribirse también al evento local para pruebas sin servidor
+                // Re-join drivers group automatically after reconnect
+                _hub.Reconnected += async (string connectionId) =>
+                {
+                    try
+                    {
+                        await _hub.SendAsync("JoinGroup", "drivers");
+                        // Si ya tengo un viaje en curso, volver a unirme a su grupo para recibir/emitir actualizaciones
+                        if (_solicitudEnCurso != null)
+                        {
+                            try
+                            {
+                                await _hub.SendAsync("JoinGroup", $"solicitud-{_solicitudEnCurso.SolicitudFleteId}");
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error re-joining solicitud group: {ex}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error re-joining drivers group: {ex}");
+                    }
+                };
+
+                // No special action needed on reconnecting, keep handler for completeness
+                _hub.Reconnecting += (exception) =>
+                {
+                    return Task.CompletedTask;
+                };
+
+                // Escuchar actualizaciones de conteo de mensajes no leídos via SignalR
+                _hub.On<int>("UnreadCountUpdated", count =>
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        if (_chatToolbarItem != null)
+                            _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat";
+                    });
+                });
+
                 TransporteService.SolicitudCreada += OnSolicitudCreadaLocal;
             }
 
             await _hub.StartAsync();
+            try
+            {
+                await _hub.SendAsync("JoinGroup", "drivers");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo drivers: {ex}");
+            }
         }
         catch (Exception ex)
         {
@@ -93,12 +173,67 @@ public partial class HomeConductor : ContentPage
                 _hub = null;
             }
             TransporteService.SolicitudCreada -= OnSolicitudCreadaLocal;
+            // Polling eliminado: badge actualizado por SignalR (UnreadCountUpdated)
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error stopping hub: {ex}");
         }
     }
+
+    private CancellationTokenSource? _chatBadgeCts;
+    private ToolbarItem? _chatToolbarItem;
+
+    private void StartChatBadgePolling()
+    {
+        try
+        {
+            if (_chatToolbarItem == null)
+            {
+                _chatToolbarItem = new ToolbarItem { Text = "Chat", Order = ToolbarItemOrder.Primary };
+                _chatToolbarItem.Clicked += ChatItem_Clicked;
+                ToolbarItems.Add(_chatToolbarItem);
+            }
+
+            _chatBadgeCts?.Cancel();
+            _chatBadgeCts = new CancellationTokenSource();
+            var token = _chatBadgeCts.Token;
+            _ = Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var solicitudId = _solicitudEnCurso?.SolicitudFleteId ?? _solicitudPendiente?.SolicitudFleteId;
+                        if (solicitudId != null && _chatToolbarItem != null)
+                        {
+                            var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
+#if DEBUG
+                            var apiBase = "http://10.0.2.2:5051/api/";
+#else
+                            var apiBase = "https://mueveya.onrender.com/api/";
+#endif
+                            var http = new System.Net.Http.HttpClient();
+                            var url = apiBase + $"Chat/unread-count/{solicitudId}?forUser={System.Net.WebUtility.UrlEncode(user)}";
+                            var resp = await http.GetAsync(url, token);
+                            if (resp.IsSuccessStatusCode)
+                            {
+                                var json = await resp.Content.ReadAsStringAsync(token);
+                                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                                var count = doc.RootElement.GetProperty("count").GetInt32();
+                                MainThread.BeginInvokeOnMainThread(() => _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat");
+                            }
+                        }
+                    }
+                    catch { }
+                    await Task.Delay(10000, token);
+                }
+            }, token);
+        }
+        catch { }
+    }
+
+    // Polling eliminado: badge actualizado por SignalR (UnreadCountUpdated)
 
     private void OnSolicitudCreadaLocal(SolicitudFleteDto solicitud)
     {
@@ -192,7 +327,9 @@ public partial class HomeConductor : ContentPage
         }
     }
 
-    private void RenderSolicitudOnMap(SolicitudFleteDto s)
+    // MostrarViajeEnCurso está definido más abajo; se usa la implementación completa.
+
+    private async void RenderSolicitudOnMap(SolicitudFleteDto s)
     {
         if (s == null) return;
 
@@ -208,15 +345,41 @@ public partial class HomeConductor : ContentPage
         mapConductor.Pins.Add(pinOrigen);
         mapConductor.Pins.Add(pinDestino);
 
-        // Dibujar una línea simple entre origen y destino
-        var poly = new Polyline
+        // Intentar obtener ruta real via OSRM, con fallback a línea directa
+        try
         {
-            StrokeColor = Color.FromArgb("#E65100"),
-            StrokeWidth = 6
-        };
-        poly.Geopath.Add(origen);
-        poly.Geopath.Add(destino);
-        mapConductor.MapElements.Add(poly);
+            var puntos = await AppFletesMueve.Services.DirectionsService.GetRoutePointsAsync(origen.Latitude, origen.Longitude, destino.Latitude, destino.Longitude);
+            var poly = new Polyline
+            {
+                StrokeColor = Color.FromArgb("#E65100"),
+                StrokeWidth = 6
+            };
+
+            if (puntos != null && puntos.Count > 0)
+            {
+                foreach (var p in puntos)
+                    poly.Geopath.Add(p);
+            }
+            else
+            {
+                poly.Geopath.Add(origen);
+                poly.Geopath.Add(destino);
+            }
+
+            mapConductor.MapElements.Add(poly);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error obteniendo ruta conductor: {ex}");
+            var poly = new Polyline
+            {
+                StrokeColor = Color.FromArgb("#E65100"),
+                StrokeWidth = 6
+            };
+            poly.Geopath.Add(origen);
+            poly.Geopath.Add(destino);
+            mapConductor.MapElements.Add(poly);
+        }
 
         // Centrar en el origen con un radio basado en la distancia
         var distanciaKm = TransporteService.HaversineDistanceKm(s.LatitudOrigen, s.LongitudOrigen, s.LatitudDestino, s.LongitudDestino);
@@ -242,6 +405,56 @@ public partial class HomeConductor : ContentPage
         lblPrecio.Text = $"${s.Precio:0.00} MXN";
 
         btnAccion.Text = "FINALIZAR VIAJE";
+        try
+        {
+            // Renderizar la ruta y empezar a enviar ubicación periódicamente
+            // Guardar el viaje en curso antes de renderizar para que cualquier handler pueda consultarlo
+            _solicitudEnCurso = s;
+            RenderSolicitudOnMap(s);
+            StartUbicacionUpdates(s.SolicitudFleteId);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error iniciando viaje en curso: {ex}");
+        }
+    }
+
+    private void StartUbicacionUpdates(int solicitudId)
+    {
+        _ubicacionCts?.Cancel();
+        _ubicacionCts = new CancellationTokenSource();
+        var token = _ubicacionCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    var loc = await Geolocation.Default.GetLocationAsync();
+                    if (loc != null && _hub != null && _hub.State == HubConnectionState.Connected)
+                    {
+                        await _hub.SendAsync("ActualizarUbicacion", solicitudId, loc.Latitude, loc.Longitude);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error enviando ubicación: {ex}");
+                }
+
+                await Task.Delay(5000, token);
+            }
+        }, token);
+    }
+
+    private void StopUbicacionUpdates()
+    {
+        try
+        {
+            _ubicacionCts?.Cancel();
+            _ubicacionCts = null;
+        }
+        catch { }
     }
 
     private async void CompletarPerfil_Clicked(object? sender, EventArgs e)
@@ -255,6 +468,8 @@ public partial class HomeConductor : ContentPage
         {
             if (_solicitudEnCurso != null)
             {
+                // Detener envío de ubicación antes de finalizar
+                StopUbicacionUpdates();
                 var resultado = await _transporteService.CompletarSolicitud(_solicitudEnCurso.SolicitudFleteId);
                 await DisplayAlertAsync("MUEVE",
                     resultado != null ? "Viaje finalizado correctamente." : "No se pudo finalizar el viaje.",
@@ -268,6 +483,18 @@ public partial class HomeConductor : ContentPage
                 await DisplayAlertAsync("MUEVE",
                     ok ? "Viaje aceptado correctamente." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
                     "Aceptar");
+                if (ok && _hub != null && _hub.State == HubConnectionState.Connected)
+                {
+                    try
+                    {
+                        // Unirse al grupo de la solicitud aceptada para enviar/recibir actualizaciones
+                        await _hub.SendAsync("JoinGroup", $"solicitud-{_solicitudPendiente.SolicitudFleteId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo de la solicitud al aceptar: {ex}");
+                    }
+                }
             }
         }
         catch (Exception ex)

@@ -3,6 +3,7 @@ using AppFletesMueve.Api.Dtos;
 using AppFletesMueve.Api.Models;
 using AppFletesMueve.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppFletesMueve.Api.Controllers
@@ -11,13 +12,16 @@ namespace AppFletesMueve.Api.Controllers
     [Route("api/[controller]")]
     public class SolicitudesFleteController : ControllerBase
     {
-        private readonly MueveDbContext _context;
-        private readonly ICalculadoraTarifas _tarifas;
+    private readonly MueveDbContext _context;
+    private readonly ICalculadoraTarifas _tarifas;
+    private readonly Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> _hub;
 
-        public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas)
+    public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas,
+        Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> hub)
         {
             _context = context;
             _tarifas = tarifas;
+        _hub = hub;
         }
 
         [HttpPost]
@@ -71,6 +75,14 @@ namespace AppFletesMueve.Api.Controllers
             await _context.SaveChangesAsync();
 
             var resultado = await ObtenerDto(solicitud.SolicitudFleteId);
+
+            // Notificar en tiempo real a conductores (vía SignalR) usando grupo 'drivers'
+            try
+            {
+                await _hub.Clients.Group("drivers").SendAsync("NuevaSolicitud", resultado);
+            }
+            catch { }
+
             return CreatedAtAction(nameof(ObtenerPorId),
                 new { id = solicitud.SolicitudFleteId }, resultado);
         }
@@ -146,7 +158,15 @@ namespace AppFletesMueve.Api.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(await ObtenerDto(id));
+            var resultadoDto = await ObtenerDto(id);
+            try
+            {
+                var groupName = $"solicitud-{id}";
+                await _hub.Clients.Group(groupName).SendAsync("SolicitudAceptada", resultadoDto);
+            }
+            catch { }
+
+            return Ok(resultadoDto);
         }
 
         [HttpPut("{id:int}/cancelar")]

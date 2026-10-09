@@ -16,6 +16,7 @@ namespace AppFletesMueve.Api.Data
         public DbSet<TipoCarga> TiposCarga { get; set; }
         public DbSet<SolicitudFlete> SolicitudesFlete { get; set; }
         public DbSet<SolicitudCarga> SolicitudesCarga { get; set; }
+        public DbSet<AppFletesMueve.Api.Models.ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

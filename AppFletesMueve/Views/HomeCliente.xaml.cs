@@ -10,11 +10,15 @@ using Microsoft.Maui.Storage;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Maui.Graphics;
 
 namespace AppFletesMueve.Views
 {
     public partial class HomeCliente : ContentPage
     {
+        private ToolbarItem? _chatToolbarItem;
+
         private readonly TransporteService _transporteService = new();
         private readonly PlacesService _placesService = new();
      //  private CancellationTokenSource? _debounceCts;
@@ -27,6 +31,9 @@ namespace AppFletesMueve.Views
         private bool _eligiendoDestinoEnMapa;
         private string? _origenDescripcionSeleccionada;
         private string? _destinoDescripcionSeleccionada;
+        private HubConnection? _hubCliente;
+        private int? _solicitudActivaId;
+        private Pin? _pinConductor;
 
         public HomeCliente()
         {
@@ -35,6 +42,34 @@ namespace AppFletesMueve.Views
             string nombre = Preferences.Get("Nombre", "Cliente");
 
             lblBienvenida.Text = $"Hola, {nombre}";
+
+            // Añadir botón de Chat en la barra de la página
+            _chatToolbarItem = new ToolbarItem
+            {
+                Text = "Chat",
+                Order = ToolbarItemOrder.Primary
+            };
+            _chatToolbarItem.Clicked += ChatItem_Clicked;
+            ToolbarItems.Add(_chatToolbarItem);
+        }
+
+        private async void ChatItem_Clicked(object? sender, EventArgs e)
+        {
+            if (_solicitudActivaId == null)
+            {
+                await DisplayAlertAsync("Chat", "No hay una solicitud activa para chatear.", "Aceptar");
+                return;
+            }
+
+            if (_hubCliente == null)
+            {
+                await DisplayAlertAsync("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
+                return;
+            }
+
+            var group = $"solicitud-{_solicitudActivaId}";
+            var user = Preferences.Get("Nombre", "Cliente");
+            await Navigation.PushAsync(new ChatPage(_hubCliente, group, user));
         }
 
         protected override async void OnAppearing()
@@ -65,7 +100,167 @@ namespace AppFletesMueve.Views
                     System.Diagnostics.Debug.WriteLine($"No se pudo obtener ubicación: {ex}");
                 }
             }
+
+            // Inicializar conexión SignalR para recibir actualizaciones del conductor
+            try
+            {
+                if (_hubCliente == null)
+                {
+                    _hubCliente = new HubConnectionBuilder()
+                        .WithUrl(TransporteService.HubUrl)
+                        .WithAutomaticReconnect()
+                        .Build();
+
+                    _hubCliente.On<SolicitudFleteDto>("SolicitudAceptada", solicitud =>
+                    {
+                        if (solicitud.ClienteId != SesionUsuario.UsuarioId) return;
+                        MainThread.BeginInvokeOnMainThread(async () =>
+                        {
+                            _solicitudActivaId = solicitud.SolicitudFleteId;
+                            await DisplayAlert("MUEVE", "Tu viaje fue aceptado. El conductor está en camino.", "Aceptar");
+
+                            // Mostrar recorrido en el mapa del cliente
+                            mapCliente.Pins.Clear();
+                            mapCliente.MapElements.Clear();
+                            var origen = new Location(solicitud.LatitudOrigen, solicitud.LongitudOrigen);
+                            var destino = new Location(solicitud.LatitudDestino, solicitud.LongitudDestino);
+                            mapCliente.Pins.Add(new Pin { Label = "Origen: " + solicitud.DireccionOrigen, Location = origen });
+                            mapCliente.Pins.Add(new Pin { Label = "Destino: " + solicitud.DireccionDestino, Location = destino });
+
+                            // Intentar obtener ruta real via OSRM
+                            try
+                            {
+                                var puntos = await DirectionsService.GetRoutePointsAsync(solicitud.LatitudOrigen, solicitud.LongitudOrigen, solicitud.LatitudDestino, solicitud.LongitudDestino);
+                                var linea = new Polyline { StrokeColor = Colors.Orange, StrokeWidth = 8 };
+                                if (puntos != null && puntos.Count > 0)
+                                {
+                                    foreach (var p in puntos)
+                                        linea.Geopath.Add(p);
+                                }
+                                else
+                                {
+                                    linea.Geopath.Add(origen);
+                                    linea.Geopath.Add(destino);
+                                }
+
+                                mapCliente.MapElements.Add(linea);
+                                mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(origen, Distance.FromKilometers(2)));
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error obteniendo ruta: {ex}");
+                                var linea = new Polyline { StrokeColor = Colors.Orange, StrokeWidth = 8 };
+                                linea.Geopath.Add(origen);
+                                linea.Geopath.Add(destino);
+                                mapCliente.MapElements.Add(linea);
+                                mapCliente.MoveToRegion(MapSpan.FromCenterAndRadius(origen, Distance.FromKilometers(2)));
+                            }
+                        });
+                    });
+
+                    // Escuchar actualizaciones de conteo de mensajes no leídos via SignalR
+                    _hubCliente.On<int>("UnreadCountUpdated", count =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            if (_chatToolbarItem != null)
+                                _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat";
+                        });
+                    });
+                    _hubCliente.On<int, double, double>("UbicacionConductor", (solId, lat, lon) =>
+                    {
+                        if (_solicitudActivaId != solId) return;
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            var loc = new Location(lat, lon);
+                            if (_pinConductor == null)
+                            {
+                                _pinConductor = new Pin { Label = "Conductor", Location = loc };
+                                mapCliente.Pins.Add(_pinConductor);
+                            }
+                            else
+                            {
+                                // actualizar posición: remover y volver a añadir
+                                mapCliente.Pins.Remove(_pinConductor);
+                                _pinConductor = new Pin { Label = "Conductor", Location = loc };
+                                mapCliente.Pins.Add(_pinConductor);
+                            }
+                        });
+                    });
+                    // Volver a unirse al grupo de la solicitud si la conexión se restablece
+                    _hubCliente.Reconnected += async (string? connectionId) =>
+                    {
+                        try
+                        {
+                            if (_solicitudActivaId != null && _hubCliente.State == HubConnectionState.Connected)
+                            {
+                                await _hubCliente.SendAsync("JoinGroup", $"solicitud-{_solicitudActivaId}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error re-suscribiéndose al grupo: {ex}");
+                        }
+                    };
+
+                    // Si ya existía una solicitud activa antes de iniciar, unirse ahora
+                    // Esto cubre el caso de navegación de vuelta a la página
+                    // o si la solicitud fue creada en una sesión previa
+
+                }
+
+                await _hubCliente.StartAsync();
+
+                if (_hubCliente.State == HubConnectionState.Connected && _solicitudActivaId != null)
+                {
+                    try
+                    {
+                        await _hubCliente.SendAsync("JoinGroup", $"solicitud-{_solicitudActivaId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo de la solicitud al iniciar: {ex}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error SignalR cliente: {ex}");
+            }
         }
+
+        protected override async void OnDisappearing()
+        {
+            base.OnDisappearing();
+            try
+            {
+                if (_hubCliente != null)
+                {
+                    // dejar el grupo de la solicitud activa antes de desconectar
+                    try
+                    {
+                        if (_solicitudActivaId != null && _hubCliente.State == HubConnectionState.Connected)
+                        {
+                            await _hubCliente.SendAsync("LeaveGroup", $"solicitud-{_solicitudActivaId}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error al salir del grupo: {ex}");
+                    }
+
+                    await _hubCliente.StopAsync();
+                    await _hubCliente.DisposeAsync();
+                    _hubCliente = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error stopping hub cliente: {ex}");
+            }
+        }
+
+        // Badge de chat gestionado por SignalR (UnreadCountUpdated)
 
         private void Vehiculos_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
@@ -365,7 +560,20 @@ namespace AppFletesMueve.Views
                     var resultado = await _transporteService.CrearSolicitud(request);
                     if (resultado != null)
                     {
+                        _solicitudActivaId = resultado.SolicitudFleteId;
                         await DisplayAlertAsync("MUEVE", $"Solicitud creada. Precio estimado: ${resultado.Precio:0.00}", "Aceptar");
+                        // Unirse al grupo de la solicitud para recibir actualizaciones del conductor
+                        if (_hubCliente != null && _hubCliente.State == HubConnectionState.Connected)
+                        {
+                            try
+                            {
+                                await _hubCliente.SendAsync("JoinGroup", $"solicitud-{_solicitudActivaId}");
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo de la solicitud: {ex}");
+                            }
+                        }
                     }
                     else
                     {

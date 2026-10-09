@@ -19,6 +19,7 @@ builder.Services.AddDbContext<MueveDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
 
 builder.Services.AddScoped<ICalculadoraTarifas, CalculadoraTarifas>();      
 
@@ -48,6 +49,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<AppFletesMueve.Api.Hubs.SolicitudesHub>("/hubs/solicitudes");
 app.Run();
 
 static string ConvertirUrlPostgres(string url)
