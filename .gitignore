@@ -6,3 +6,4 @@ obj/
 .vs/
 *.keystore
 ProjectStructure_export.txt
+*.user
