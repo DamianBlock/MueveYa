@@ -98,7 +98,7 @@ namespace AppFletesMueve.Api.Controllers
             // Notificar en tiempo real a conductores (vía SignalR) usando grupo 'drivers'
             try
             {
-                await _hub.Clients.Group("drivers").SendAsync("NuevaSolicitud", resultado);
+                await _hub.Clients.Group($"drivers-{solicitud.TipoVehiculo}").SendAsync("NuevaSolicitud", resultado);
             }
             catch (Exception ex)
             {
@@ -118,10 +118,15 @@ namespace AppFletesMueve.Api.Controllers
 
         // Lo que un conductor ve para elegir qué aceptar
         [HttpGet("pendientes")]
-        public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPendientes()
+        public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPendientes([FromQuery] TipoVehiculo? tipo)
         {
-            var ids = await _context.SolicitudesFlete
-                .Where(s => s.Estado == EstadoSolicitud.Pendiente)
+            var query = _context.SolicitudesFlete
+                .Where(s => s.Estado == EstadoSolicitud.Pendiente);
+
+            if (tipo.HasValue)
+                query = query.Where(s => s.TipoVehiculo == tipo.Value);
+
+            var ids = await query
                 .OrderBy(s => s.FechaSolicitud)
                 .Select(s => s.SolicitudFleteId)
                 .ToListAsync();

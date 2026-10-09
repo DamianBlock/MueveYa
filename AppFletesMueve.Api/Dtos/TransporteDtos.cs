@@ -205,4 +205,15 @@ namespace AppFletesMueve.Api.Dtos
         public int MinutosEspera { get; set; }
         public List<OpcionTarifaDto> Opciones { get; set; } = new();
     }
+
+    public class ActivarConductorDto
+    {
+        public int VehiculoId { get; set; }
+
+        [Range(-90, 90)]
+        public double? Latitud { get; set; }
+
+        [Range(-180, 180)]
+        public double? Longitud { get; set; }
+    }
 }

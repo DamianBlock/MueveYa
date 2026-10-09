@@ -76,7 +76,64 @@ namespace AppFletesMueve.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(ToDto(conductor, conductor.Usuario));
         }
+        [HttpPut("{id:int}/activar")]
+        public async Task<ActionResult<ConductorDto>> Activar(int id, ActivarConductorDto dto)
+        {
+            var conductor = await _context.Conductores
+                .Include(c => c.Usuario)
+                .Include(c => c.Vehiculos)
+                .FirstOrDefaultAsync(c => c.ConductorId == id);
 
+            if (conductor is null)
+                return NotFound();
+
+            var elegido = conductor.Vehiculos.FirstOrDefault(v => v.VehiculoId == dto.VehiculoId);
+            if (elegido is null)
+                return BadRequest(new { mensaje = "El vehículo no pertenece a ese conductor" });
+
+            var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
+                s.ConductorId == id &&
+                (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso));
+            if (tieneViajeActivo)
+                return Conflict(new { mensaje = "Tenés un viaje en curso" });
+
+            // Solo el vehículo elegido queda disponible
+            foreach (var v in conductor.Vehiculos)
+                v.Disponible = v.VehiculoId == elegido.VehiculoId;
+
+            conductor.Disponible = true;
+            if (dto.Latitud.HasValue) conductor.Latitud = dto.Latitud.Value;
+            if (dto.Longitud.HasValue) conductor.Longitud = dto.Longitud.Value;
+
+            await _context.SaveChangesAsync();
+            return Ok(ToDto(conductor, conductor.Usuario));
+        }
+
+        [HttpPut("{id:int}/desactivar")]
+        public async Task<ActionResult<ConductorDto>> Desactivar(int id)
+        {
+            var conductor = await _context.Conductores
+                .Include(c => c.Usuario)
+                .Include(c => c.Vehiculos)
+                .FirstOrDefaultAsync(c => c.ConductorId == id);
+
+            if (conductor is null)
+                return NotFound();
+
+            var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
+                s.ConductorId == id &&
+                (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso));
+            if (tieneViajeActivo)
+                return Conflict(new { mensaje = "Finalizá tu viaje antes de detener las solicitudes" });
+
+            foreach (var v in conductor.Vehiculos)
+                v.Disponible = false;
+
+            conductor.Disponible = false;
+
+            await _context.SaveChangesAsync();
+            return Ok(ToDto(conductor, conductor.Usuario));
+        }
         private static ConductorDto ToDto(Conductor c, Usuario u) => new()
         {
             ConductorId = c.ConductorId,
