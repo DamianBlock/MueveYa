@@ -15,18 +15,10 @@ namespace AppFletesMueve.Services
         private const string OsrmBase = "https://router.project-osrm.org";
         public static DirectionsService Instance { get; set; } = new DirectionsService();
 
-        // Backward-compatible static facade: forwards to the singleton Instance.
-        // NOTE: prefer using DI (IDirectionsService) and resolving DirectionsService via DI.
-
-        /// <summary>
-        /// Obtiene la ruta entre dos puntos usando OSRM public API. Devuelve lista de Location.
-        /// En caso de error retorna null.
-        /// </summary>
         public async Task<List<Location>?> GetRoutePointsAsync(double lat1, double lon1, double lat2, double lon2)
         {
             try
             {
-                // OSRM expects lon,lat pairs
                 var url = $"{OsrmBase}/route/v1/driving/{lon1.ToString(System.Globalization.CultureInfo.InvariantCulture)},{lat1.ToString(System.Globalization.CultureInfo.InvariantCulture)};{lon2.ToString(System.Globalization.CultureInfo.InvariantCulture)},{lat2.ToString(System.Globalization.CultureInfo.InvariantCulture)}?overview=full&geometries=polyline6";
 
                 using var resp = await _http.GetAsync(url);
@@ -39,7 +31,6 @@ namespace AppFletesMueve.Services
                 {
                     var first = routes[0];
 
-                    // Primero, intentar geometry como string (polyline)
                     if (first.TryGetProperty("geometry", out var geom))
                     {
                         if (geom.ValueKind == JsonValueKind.String)
@@ -62,7 +53,6 @@ namespace AppFletesMueve.Services
                         }
                         else if (geom.ValueKind == JsonValueKind.Object)
                         {
-                            // geometry como GeoJSON LineString
                             try
                             {
                                 if (geom.TryGetProperty("coordinates", out var coords) && coords.ValueKind == JsonValueKind.Array)
@@ -87,7 +77,6 @@ namespace AppFletesMueve.Services
                         }
                     }
 
-                    // Fallback: intentar extraer coordenadas desde legs -> steps -> geometry
                     if (first.TryGetProperty("legs", out var legs) && legs.ValueKind == JsonValueKind.Array)
                     {
                         var pts = new List<Location>();
@@ -146,7 +135,6 @@ namespace AppFletesMueve.Services
             }
         }
 
-        // Decodificador de polyline encoded con precision 1e6 (polyline6)
         private static List<Location> DecodePolyline(string encoded)
         {
             var poly = new List<Location>();

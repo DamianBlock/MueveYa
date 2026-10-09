@@ -23,7 +23,6 @@ namespace AppFletesMueve.Views
         private readonly IDirectionsService _directionsService;
         private readonly TransporteService _transporteService;
         private readonly PlacesService _placesService;
-     //  private CancellationTokenSource? _debounceCts;
         private Location? _ultimoDestino;
         private Location? _ultimoOrigen;
         private List<ItemCargaRequest> _cargaSeleccionada = new();
@@ -359,30 +358,34 @@ namespace AppFletesMueve.Views
 
             try
             {
-
                 var origenLat = _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0);
                 var origenLon = _ultimoOrigen?.Longitude ?? Preferences.Get("UltimaLon", 0.0);
 
                 var opciones = await _transporteService.ObtenerOpcionesVehiculoAsync(origenLat, origenLon, destino.Latitude, destino.Longitude);
 
-                if (BindingContext is MainViewModel vm)
+                // Garantizar que la modificación de la colección se ejecute en el Hilo Principal
+                await MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    vm.Vehiculos.Clear();
-                    foreach (var o in opciones)
+                    if (BindingContext is MainViewModel vm)
                     {
-                        vm.Vehiculos.Add(new Models.VehiculoModel
+                        vm.Vehiculos.Clear();
+                        foreach (var o in opciones)
                         {
-                            Id = o.VehiculoId,
-                            Nombre = o.Nombre,
-                            Imagen = o.Imagen ?? "pickup_truck.png",
-                            Precio = Convert.ToDecimal(o.Precio),
-                            Info = "Opción"
-                        });
+                            vm.Vehiculos.Add(new Models.VehiculoModel
+                            {
+                                Id = o.VehiculoId,
+                                Nombre = o.Nombre,
+                                Imagen = o.Imagen ?? "pickup_truck.png",
+                                Precio = Convert.ToDecimal(o.Precio),
+                                Info = "Opción"
+                            });
+                        }
                     }
-                }
+                });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error actualizando opciones de vehículo: {ex}");
                 await DisplayAlertAsync("MUEVE", "No se pudieron obtener opciones de vehículo.", "Aceptar");
             }
         }
@@ -463,15 +466,13 @@ namespace AppFletesMueve.Views
 
         private async void SugerenciaDestino_Tapped(object? sender, TappedEventArgs e)
         {
-           
-
             if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
                 return;
 
-            _debounceCtsOrigen?.Cancel();
-            listaSugerenciasOrigen.IsVisible = false;
-            _origenDescripcionSeleccionada = sugerencia.Description;
-            txtOrigen.Text = sugerencia.Description;
+            _debounceCtsDestino?.Cancel();
+            listaSugerencias.IsVisible = false;
+            _destinoDescripcionSeleccionada = sugerencia.Description;
+            txtDestino.Text = sugerencia.Description;
 
             var detalle = await _placesService.ObtenerDetalleAsync(sugerencia.PlaceId);
             if (detalle is null)
