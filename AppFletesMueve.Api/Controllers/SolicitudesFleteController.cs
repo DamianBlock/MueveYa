@@ -52,7 +52,13 @@ namespace AppFletesMueve.Api.Controllers
             }).ToList();
 
             var pesoTotal = cargas.Sum(c => c.PesoKg);
-            var precio = _tarifas.Calcular(dto.DistanciaKm, pesoTotal, dto.TipoServicio);
+            var volumenTotal = cargas.Sum(c => c.VolumenM3);
+
+            var perfil = _tarifas.ObtenerPerfil(dto.TipoVehiculo);
+            if (pesoTotal > perfil.CapacidadKg || volumenTotal > perfil.CapacidadM3)
+                return BadRequest(new { mensaje = "La carga no entra en el vehículo elegido" });
+
+            var precio = _tarifas.Calcular(dto.DistanciaKm, pesoTotal, dto.TipoServicio, dto.TipoVehiculo);
 
             var solicitud = new SolicitudFlete
             {
@@ -68,7 +74,8 @@ namespace AppFletesMueve.Api.Controllers
                 DistanciaKm = dto.DistanciaKm,
                 Precio = precio,
                 Estado = EstadoSolicitud.Pendiente,
-                Cargas = cargas
+                Cargas = cargas,
+                TipoVehiculo = dto.TipoVehiculo,
             };
 
             _context.SolicitudesFlete.Add(solicitud);
@@ -147,6 +154,9 @@ namespace AppFletesMueve.Api.Controllers
                     && v.ConductorId == dto.ConductorId);
             if (vehiculo is null)
                 return BadRequest(new { mensaje = "El vehículo no pertenece a ese conductor" });
+
+            if (vehiculo.TipoVehiculo != solicitud.TipoVehiculo)
+                return Conflict(new { mensaje = $"Esta solicitud pide un vehículo tipo {solicitud.TipoVehiculo}" });
 
             if (!vehiculo.Disponible)
                 return Conflict(new { mensaje = "El vehículo no está disponible" });
@@ -256,6 +266,7 @@ namespace AppFletesMueve.Api.Controllers
                 DistanciaKm = s.DistanciaKm,
                 Precio = s.Precio,
                 Estado = s.Estado,
+                TipoVehiculo = s.TipoVehiculo,
                 Cargas = s.Cargas.Select(c => new CargaDto
                 {
                     TipoCargaId = c.TipoCargaId,

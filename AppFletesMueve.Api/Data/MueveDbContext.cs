@@ -68,6 +68,11 @@ namespace AppFletesMueve.Api.Data
                 e.Property(s => s.Estado).HasConversion<string>().HasMaxLength(30);
                 e.Property(s => s.Precio).HasPrecision(12, 2);
 
+                e.Property(s => s.TipoVehiculo)
+                    .HasConversion<string>()
+                    .HasMaxLength(30)
+                    .HasDefaultValue(TipoVehiculo.Utilitario);
+
                 e.HasIndex(s => s.Estado);
             });
 

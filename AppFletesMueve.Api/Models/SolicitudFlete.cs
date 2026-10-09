@@ -17,6 +17,9 @@ namespace AppFletesMueve.Api.Models
 
         public TipoServicio TipoServicio { get; set; }
 
+        // Tipo de vehículo que pidió el cliente
+        public TipoVehiculo TipoVehiculo { get; set; }
+
         // Siempre en UTC
         public DateTime FechaSolicitud { get; set; } = DateTime.UtcNow;
 

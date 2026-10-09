@@ -129,6 +129,9 @@ namespace AppFletesMueve.Api.Dtos
 
         [MinLength(1)]
         public List<ItemCargaDto> Cargas { get; set; } = new();
+
+        [EnumDataType(typeof(TipoVehiculo))]
+        public TipoVehiculo TipoVehiculo { get; set; }
     }
 
     public class AceptarSolicitudDto
@@ -169,5 +172,37 @@ namespace AppFletesMueve.Api.Dtos
         public decimal Precio { get; set; }
         public EstadoSolicitud Estado { get; set; }
         public List<CargaDto> Cargas { get; set; } = new();
+        public TipoVehiculo TipoVehiculo { get; set; }
+    }
+
+    public class CotizarTarifaDto
+    {
+        [EnumDataType(typeof(TipoServicio))]
+        public TipoServicio TipoServicio { get; set; }
+
+        [Range(0.1, 2000)]
+        public double DistanciaKm { get; set; }
+
+        [MinLength(1)]
+        public List<ItemCargaDto> Cargas { get; set; } = new();
+    }
+
+    public class OpcionTarifaDto
+    {
+        public TipoVehiculo TipoVehiculo { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public decimal Precio { get; set; }
+        public double CapacidadKg { get; set; }
+        public double CapacidadM3 { get; set; }
+        public bool Entra { get; set; }
+        public bool Sugerido { get; set; }
+    }
+
+    public class CotizacionDto
+    {
+        public double PesoTotalKg { get; set; }
+        public double VolumenTotalM3 { get; set; }
+        public int MinutosEspera { get; set; }
+        public List<OpcionTarifaDto> Opciones { get; set; } = new();
     }
 }
