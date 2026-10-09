@@ -332,26 +332,12 @@
 
                 <Button Text="{Binding TextoConfirmar}"
                     IsEnabled="{Binding PuedeConfirmar}"
+                    BackgroundColor="#2E7D32"
                     TextColor="White"
                     FontAttributes="Bold"
                     HeightRequest="55"
                     CornerRadius="12"
-                    Clicked="ConfirmarFlete_Clicked">
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup Name="CommonStates">
-                            <VisualState Name="Normal">
-                                <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="#2E7D32" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState Name="Disabled">
-                                <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="#BDBDBD" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
-                </Button>
+                    Clicked="ConfirmarFlete_Clicked"/>
             </VerticalStackLayout>
         </Border>
 
