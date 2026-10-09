@@ -9,11 +9,11 @@
         <VerticalStackLayout Padding="20" Spacing="15">
 
             <Label Text="¿Qué vas a trasladar?" FontSize="20" FontAttributes="Bold" TextColor="#E65100"/>
-            <Label Text="Elegí la opción que más se parezca a lo tuyo" TextColor="Gray" FontSize="13"/>
+            <Label Text="Elegí una opción y ajustá las cantidades." TextColor="Gray" FontSize="13"/>
 
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
 
-                <Border Grid.Row="0" Grid.Column="0" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                <Border x:Name="borderPocasCosas" Grid.Row="0" Grid.Column="0" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="PresetPocasCosas_Tapped"/>
                     </Border.GestureRecognizers>
@@ -23,7 +23,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border Grid.Row="0" Grid.Column="1" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                <Border x:Name="borderMudanzaChica" Grid.Row="0" Grid.Column="1" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="PresetMudanzaChica_Tapped"/>
                     </Border.GestureRecognizers>
@@ -33,7 +33,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border Grid.Row="1" Grid.Column="0" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                <Border x:Name="borderMudanzaGrande" Grid.Row="1" Grid.Column="0" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="PresetMudanzaGrande_Tapped"/>
                     </Border.GestureRecognizers>
@@ -43,7 +43,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
+                <Border x:Name="borderMateriales" Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 12" Stroke="#E0E0E0" Padding="15" BackgroundColor="White">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="PresetMateriales_Tapped"/>
                     </Border.GestureRecognizers>
