@@ -89,6 +89,8 @@ namespace AppFletesMueve.Api.Data
                     .HasForeignKey(c => c.TipoCargaId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+
+            modelBuilder.Entity<ChatMessage>().HasIndex(m => m.SolicitudFleteId);
         }
     }
 }
