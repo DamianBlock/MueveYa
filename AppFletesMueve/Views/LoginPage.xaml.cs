@@ -25,7 +25,7 @@ public partial class LoginPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert(
+            await DisplayAlertAsync(
                 "Error de conexión",
                 "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.",
                 "Aceptar");
@@ -35,7 +35,7 @@ public partial class LoginPage : ContentPage
 
         if (usuario == null)
         {
-            await DisplayAlert("Error", "Usuario o contraseña incorrectos", "Aceptar");
+            await DisplayAlertAsync("Error", "Usuario o contraseña incorrectos", "Aceptar");
             return;
         }
 

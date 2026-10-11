@@ -30,7 +30,13 @@ namespace AppFletesMueve
                 // intentar mostrar alerta en UI thread
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
-                    try { await Current.MainPage.DisplayAlertAsync("Error", "Ocurrió un error inesperado.", "Aceptar"); } catch { }
+                    try
+                    {
+                        var page = Current?.Windows.FirstOrDefault()?.Page;
+                        if (page != null)
+                            await page.DisplayAlertAsync("Error", "Ocurrió un error inesperado.", "Aceptar");
+                    }
+                    catch { }
                 });
             }
             catch { }

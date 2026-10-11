@@ -25,7 +25,7 @@ public partial class CompletarPerfilConductorPage : ContentPage
             !double.TryParse(txtCapacidadKg.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var capacidad) ||
             !double.TryParse(txtVolumenM3.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var volumen))
             {
-            await DisplayAlert("MUEVE", "Completá todos los campos correctamente.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "Completá todos los campos correctamente.", "Aceptar");
             return;
         }
 
@@ -36,14 +36,14 @@ public partial class CompletarPerfilConductorPage : ContentPage
 
             if (!okConductor)
                 {
-                await DisplayAlert("MUEVE", errorConductor ?? "No se pudo crear el perfil de conductor.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", errorConductor ?? "No se pudo crear el perfil de conductor.", "Aceptar");
                 return;
             }
 
             var conductor = await _transporteService.ObtenerConductorPorUsuario(SesionUsuario.UsuarioId);
             if (conductor is null)
             {
-                await DisplayAlert("MUEVE", "No se pudo recuperar el perfil creado.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", "No se pudo recuperar el perfil creado.", "Aceptar");
                 return;
             }
 
@@ -61,11 +61,11 @@ public partial class CompletarPerfilConductorPage : ContentPage
 
             if (!okVehiculo)
             {
-                await DisplayAlert("MUEVE", errorVehiculo ?? "No se pudo registrar el vehículo.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", errorVehiculo ?? "No se pudo registrar el vehículo.", "Aceptar");
                 return;
             }
 
-            await DisplayAlert("MUEVE", "Perfil de conductor creado correctamente.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "Perfil de conductor creado correctamente.", "Aceptar");
 
             var app = Application.Current;
             if (app?.Windows?.Count > 0)
@@ -73,7 +73,7 @@ public partial class CompletarPerfilConductorPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("MUEVE", "No se pudo conectar con el servidor.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "No se pudo conectar con el servidor.", "Aceptar");
             System.Diagnostics.Debug.WriteLine($"Error al completar perfil: {ex}");
         }
     }

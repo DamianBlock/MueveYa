@@ -37,6 +37,7 @@ namespace AppFletesMueve.Views
         private int? _solicitudActivaId;
         private Pin? _pinConductor;
         private readonly CotizacionViewModel _cotizacionVm = new();
+        private bool _viajeActivoVerificado;
 
         public HomeCliente(IDirectionsService directionsService, TransporteService transporteService, PlacesService placesService, IChatPageFactory chatPageFactory)
         {
@@ -47,6 +48,7 @@ namespace AppFletesMueve.Views
 
             InitializeComponent();
             sheetCotizacion.BindingContext = _cotizacionVm;
+            Loaded += async (_, _) => await VerificarViajeActivoAsync();
 
             string nombre = Preferences.Get("Nombre", "Cliente");
             lblBienvenida.Text = $"Hola, {nombre}";
@@ -91,7 +93,7 @@ namespace AppFletesMueve.Views
         private async Task ShowSolicitudRouteOnMap(SolicitudFleteDto solicitud)
         {
             _solicitudActivaId = solicitud.SolicitudFleteId;
-            try { await DisplayAlert("MUEVE", "Tu viaje fue aceptado. El conductor está en camino.", "Aceptar"); } catch { }
+            try { await DisplayAlertAsync("MUEVE", "Tu viaje fue aceptado. El conductor está en camino.", "Aceptar"); } catch { }
 
             mapCliente.Pins.Clear();
             mapCliente.MapElements.Clear();
@@ -121,7 +123,7 @@ namespace AppFletesMueve.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error mostrando ruta en mapa: {ex}");
-                try { await DisplayAlert("Ruta", "No se pudo calcular la ruta; se mostrará la ubicación sin ruta.", "Aceptar"); } catch { }
+                try { await DisplayAlertAsync("Ruta", "No se pudo calcular la ruta; se mostrará la ubicación sin ruta.", "Aceptar"); } catch { }
                 var fallback = new Polyline { StrokeColor = Colors.Gray, StrokeWidth = 4 };
                 fallback.Geopath.Add(origen);
                 fallback.Geopath.Add(destino);
@@ -134,13 +136,13 @@ namespace AppFletesMueve.Views
         {
             if (_solicitudActivaId == null)
             {
-                await DisplayAlert("Chat", "No hay una solicitud activa para chatear.", "Aceptar");
+                await DisplayAlertAsync("Chat", "No hay una solicitud activa para chatear.", "Aceptar");
                 return;
             }
 
             if (_hubCliente == null)
             {
-                await DisplayAlert("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
+                await DisplayAlertAsync("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
                 return;
             }
 
@@ -712,26 +714,35 @@ namespace AppFletesMueve.Views
             if (_cotizacionVm.Seleccionado is not { } elegido || _ultimoDestino is not { } destino)
                 return;
 
-            var (origenLat, origenLon) = ObtenerOrigen();
-
-            var request = new CrearSolicitudFleteRequest
-            {
-                ClienteId = SesionUsuario.UsuarioId,
-                TipoServicio = "Inmediato",
-                TipoVehiculo = elegido.TipoVehiculo,
-                DireccionOrigen = !string.IsNullOrWhiteSpace(lblOrigenResumen.Text) ? lblOrigenResumen.Text : "Mi ubicación",
-                LatitudOrigen = origenLat,
-                LongitudOrigen = origenLon,
-                DireccionDestino = !string.IsNullOrWhiteSpace(lblDestinoResumen.Text) ? lblDestinoResumen.Text : string.Empty,
-                LatitudDestino = destino.Latitude,
-                LongitudDestino = destino.Longitude,
-                DistanciaKm = _cotizacionVm.DistanciaKm,
-                Cargas = _cargaSeleccionada
-            };
-
             _cotizacionVm.EstaProcesando = true;
             try
             {
+                // Si ya tiene un viaje activo no se crea otro: se lo lleva a ese viaje
+                var activo = await _transporteService.ObtenerViajeActivoDeCliente(SesionUsuario.UsuarioId);
+                if (activo != null)
+                {
+                    await OcultarCotizacionAsync();
+                    await Navigation.PushAsync(new ViajeClientePage(activo.SolicitudFleteId));
+                    return;
+                }
+
+                var (origenLat, origenLon) = ObtenerOrigen();
+
+                var request = new CrearSolicitudFleteRequest
+                {
+                    ClienteId = SesionUsuario.UsuarioId,
+                    TipoServicio = "Inmediato",
+                    TipoVehiculo = elegido.TipoVehiculo,
+                    DireccionOrigen = !string.IsNullOrWhiteSpace(lblOrigenResumen.Text) ? lblOrigenResumen.Text : "Mi ubicación",
+                    LatitudOrigen = origenLat,
+                    LongitudOrigen = origenLon,
+                    DireccionDestino = !string.IsNullOrWhiteSpace(lblDestinoResumen.Text) ? lblDestinoResumen.Text : string.Empty,
+                    LatitudDestino = destino.Latitude,
+                    LongitudDestino = destino.Longitude,
+                    DistanciaKm = _cotizacionVm.DistanciaKm,
+                    Cargas = _cargaSeleccionada
+                };
+
                 var resultado = await _transporteService.CrearSolicitud(request);
                 if (resultado == null)
                 {
@@ -741,26 +752,25 @@ namespace AppFletesMueve.Views
 
                 _solicitudActivaId = resultado.SolicitudFleteId;
 
-                // Unirse al grupo de la solicitud (seguimiento del conductor y chat)
-                if (_hubCliente != null && _hubCliente.State == HubConnectionState.Connected)
-                {
-                    try
-                    {
-                        await _hubCliente.SendAsync("JoinGroup", $"solicitud-{_solicitudActivaId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo de la solicitud: {ex}");
-                    }
-                }
-
                 await OcultarCotizacionAsync();
-                await DisplayAlertAsync("MUEVE", $"Solicitud creada. Total: $ {resultado.Precio:N0}", "Aceptar");
+                await Navigation.PushAsync(new ViajeClientePage(resultado.SolicitudFleteId));
             }
             finally
             {
                 _cotizacionVm.EstaProcesando = false;
             }
-        }              
+        }
+
+        private async Task VerificarViajeActivoAsync()
+        {
+            if (_viajeActivoVerificado)
+                return;
+
+            _viajeActivoVerificado = true;
+
+            var activo = await _transporteService.ObtenerViajeActivoDeCliente(SesionUsuario.UsuarioId);
+            if (activo != null)
+                await Navigation.PushAsync(new ViajeClientePage(activo.SolicitudFleteId));
+        }
     }
 }
