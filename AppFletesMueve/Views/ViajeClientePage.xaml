@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+    x:Class="AppFletesMueve.Views.ViajeClientePage"
+    BackgroundColor="#F5F5F5"
+    NavigationPage.HasNavigationBar="False">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="15">
+
+            <!-- CABECERA -->
+            <Grid BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="Auto,*,Auto">
+                <Label Grid.Column="0"
+                       Text="&#8592;"
+                       FontSize="26"
+                       TextColor="White"
+                       VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="Volver_Tapped"/>
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Label Grid.Column="1"
+                       Text="Tu viaje"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Grid>
+
+            <!-- MAPA -->
+            <Border Margin="15,0"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    Padding="0">
+                <maps:Map x:Name="mapViaje" HeightRequest="260"/>
+            </Border>
+
+            <!-- ESTADO DEL VIAJE -->
+            <Border Margin="15,0"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="15">
+                <VerticalStackLayout Spacing="8">
+
+                    <Label x:Name="lblEstado"
+                           Text="Cargando..."
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#E65100"/>
+
+                    <Label x:Name="lblDetalle"
+                           FontSize="13"
+                           TextColor="#757575"/>
+
+                    <VerticalStackLayout x:Name="panelConductor" Spacing="4" IsVisible="False">
+                        <Label Text="Conductor" TextColor="#757575" FontSize="12"/>
+                        <Label x:Name="lblConductor" FontAttributes="Bold" TextColor="#212121"/>
+                        <Label x:Name="lblVehiculo" TextColor="#212121"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="Origen" TextColor="#757575" FontSize="12"/>
+                    <Label x:Name="lblOrigen" FontAttributes="Bold" TextColor="#212121"/>
+
+                    <Label Text="Destino" TextColor="#757575" FontSize="12"/>
+                    <Label x:Name="lblDestino" FontAttributes="Bold" TextColor="#212121"/>
+
+                    <Label Text="Total" TextColor="#757575" FontSize="12"/>
+                    <Label x:Name="lblPrecio"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           TextColor="#212121"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ACCIONES -->
+            <VerticalStackLayout Margin="15,0,15,20" Spacing="10">
+
+                <Button x:Name="btnChat"
+                        Text="Chat con el conductor"
+                        BackgroundColor="#E65100"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        HeightRequest="50"
+                        CornerRadius="12"
+                        IsVisible="False"
+                        Clicked="Chat_Clicked"/>
+
+                <Button x:Name="btnCancelar"
+                        Text="Cancelar solicitud"
+                        BackgroundColor="White"
+                        TextColor="#C62828"
+                        BorderColor="#C62828"
+                        BorderWidth="1"
+                        HeightRequest="50"
+                        CornerRadius="12"
+                        IsVisible="False"
+                        Clicked="Cancelar_Clicked"/>
+
+                <Button x:Name="btnVolver"
+                        Text="Volver al inicio"
+                        BackgroundColor="#2E7D32"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        HeightRequest="50"
+                        CornerRadius="12"
+                        IsVisible="False"
+                        Clicked="VolverInicio_Clicked"/>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

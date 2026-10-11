@@ -13,14 +13,14 @@ namespace AppFletesMueve.Api.Controllers
     [Route("api/[controller]")]
     public class SolicitudesFleteController : ControllerBase
     {
-    private readonly MueveDbContext _context;
-    private readonly ICalculadoraTarifas _tarifas;
-    private readonly Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> _hub;
-    private readonly ILogger<SolicitudesFleteController> _logger;
+        private readonly MueveDbContext _context;
+        private readonly ICalculadoraTarifas _tarifas;
+        private readonly IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> _hub;
+        private readonly ILogger<SolicitudesFleteController> _logger;
 
-    public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas,
-        Microsoft.AspNetCore.SignalR.IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> hub,
-        ILogger<SolicitudesFleteController> logger)
+        public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas,
+            IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> hub,
+            ILogger<SolicitudesFleteController> logger)
         {
             _context = context;
             _tarifas = tarifas;
@@ -34,6 +34,15 @@ namespace AppFletesMueve.Api.Controllers
             var cliente = await _context.Usuarios.FindAsync(dto.ClienteId);
             if (cliente is null)
                 return NotFound(new { mensaje = "El cliente no existe" });
+
+            // Un cliente solo puede tener un viaje activo a la vez
+            var yaTieneViaje = await _context.SolicitudesFlete.AnyAsync(s =>
+                s.ClienteId == dto.ClienteId &&
+                (s.Estado == EstadoSolicitud.Pendiente ||
+                 s.Estado == EstadoSolicitud.Aceptada ||
+                 s.Estado == EstadoSolicitud.EnCurso));
+            if (yaTieneViaje)
+                return Conflict(new { mensaje = "Ya tenés un viaje en curso. Cancelalo o esperá a que termine para pedir otro." });
 
             var tipoCargaIds = dto.Cargas.Select(c => c.TipoCargaId).ToList();
             var tiposCarga = await _context.TiposCarga
@@ -95,7 +104,7 @@ namespace AppFletesMueve.Api.Controllers
 
             var resultado = await ObtenerDto(solicitud.SolicitudFleteId);
 
-            // Notificar en tiempo real a conductores (vía SignalR) usando grupo 'drivers'
+            // Avisar solo a los conductores en servicio con ese tipo de vehículo
             try
             {
                 await _hub.Clients.Group($"drivers-{solicitud.TipoVehiculo}").SendAsync("NuevaSolicitud", resultado);
@@ -116,7 +125,7 @@ namespace AppFletesMueve.Api.Controllers
             return dto is null ? NotFound() : Ok(dto);
         }
 
-        // Lo que un conductor ve para elegir qué aceptar
+        // Lo que un conductor ve para elegir qué aceptar (opcionalmente filtrado por tipo de vehículo)
         [HttpGet("pendientes")]
         public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPendientes([FromQuery] TipoVehiculo? tipo)
         {
@@ -159,6 +168,25 @@ namespace AppFletesMueve.Api.Controllers
             return Ok(resultado);
         }
 
+        // Viaje activo del cliente (pendiente, aceptado o en curso)
+        [HttpGet("cliente/{clienteId:int}/activa")]
+        public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorCliente(int clienteId)
+        {
+            var id = await _context.SolicitudesFlete
+                .Where(s => s.ClienteId == clienteId &&
+                    (s.Estado == EstadoSolicitud.Pendiente ||
+                     s.Estado == EstadoSolicitud.Aceptada ||
+                     s.Estado == EstadoSolicitud.EnCurso))
+                .OrderByDescending(s => s.FechaSolicitud)
+                .Select(s => s.SolicitudFleteId)
+                .FirstOrDefaultAsync();
+
+            if (id == 0) return NotFound();
+
+            var dto = await ObtenerDto(id);
+            return dto is null ? NotFound() : Ok(dto);
+        }
+
         [HttpPut("{id:int}/aceptar")]
         public async Task<ActionResult<SolicitudFleteDto>> Aceptar(int id, AceptarSolicitudDto dto)
         {
@@ -168,6 +196,10 @@ namespace AppFletesMueve.Api.Controllers
 
             if (solicitud.Estado != EstadoSolicitud.Pendiente)
                 return Conflict(new { mensaje = "La solicitud ya no está pendiente" });
+
+            var conductor = await _context.Conductores.FindAsync(dto.ConductorId);
+            if (conductor is null || !conductor.Disponible)
+                return Conflict(new { mensaje = "Iniciá el servicio para poder aceptar viajes" });
 
             var vehiculo = await _context.Vehiculos
                 .FirstOrDefaultAsync(v => v.VehiculoId == dto.VehiculoId
@@ -199,10 +231,16 @@ namespace AppFletesMueve.Api.Controllers
             var resultadoDto = await ObtenerDto(id);
             try
             {
-                var groupName = $"solicitud-{id}";
-                await _hub.Clients.Group(groupName).SendAsync("SolicitudAceptada", resultadoDto);
+                // Al cliente (y al conductor) que están en el grupo de la solicitud
+                await _hub.Clients.Group($"solicitud-{id}").SendAsync("SolicitudAceptada", resultadoDto);
+
+                // A los demás conductores: la solicitud ya no está disponible
+                await _hub.Clients.Group($"drivers-{solicitud.TipoVehiculo}").SendAsync("SolicitudTomada", id);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo notificar la aceptación de la solicitud {SolicitudId}", id);
+            }
 
             return Ok(resultadoDto);
         }
@@ -226,8 +264,23 @@ namespace AppFletesMueve.Api.Controllers
             solicitud.Estado = EstadoSolicitud.Cancelada;
             await _context.SaveChangesAsync();
 
-            return Ok(await ObtenerDto(id));
+            var resultadoDto = await ObtenerDto(id);
+            try
+            {
+                // Al conductor que ya la había aceptado (y al cliente en otros dispositivos)
+                await _hub.Clients.Group($"solicitud-{id}").SendAsync("SolicitudCancelada", resultadoDto);
+
+                // A los conductores que todavía la ven como pendiente
+                await _hub.Clients.Group($"drivers-{solicitud.TipoVehiculo}").SendAsync("SolicitudTomada", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo notificar la cancelación de la solicitud {SolicitudId}", id);
+            }
+
+            return Ok(resultadoDto);
         }
+
         [HttpGet("conductor/{conductorId:int}/activa")]
         public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorConductor(int conductorId)
         {
@@ -243,6 +296,7 @@ namespace AppFletesMueve.Api.Controllers
             var dto = await ObtenerDto(id);
             return dto is null ? NotFound() : Ok(dto);
         }
+
         [HttpPut("{id:int}/completar")]
         public async Task<ActionResult<SolicitudFleteDto>> Completar(int id)
         {
@@ -262,13 +316,26 @@ namespace AppFletesMueve.Api.Controllers
             solicitud.Estado = EstadoSolicitud.Completada;
             await _context.SaveChangesAsync();
 
-            return Ok(await ObtenerDto(id));
+            var resultadoDto = await ObtenerDto(id);
+            try
+            {
+                await _hub.Clients.Group($"solicitud-{id}").SendAsync("SolicitudCompletada", resultadoDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo notificar la finalización de la solicitud {SolicitudId}", id);
+            }
+
+            return Ok(resultadoDto);
         }
+
         private async Task<SolicitudFleteDto?> ObtenerDto(int id)
         {
             var s = await _context.SolicitudesFlete
                 .AsNoTracking()
                 .Include(x => x.Cliente)
+                .Include(x => x.Conductor).ThenInclude(c => c!.Usuario)
+                .Include(x => x.Vehiculo)
                 .Include(x => x.Cargas)
                     .ThenInclude(c => c.TipoCarga)
                 .FirstOrDefaultAsync(x => x.SolicitudFleteId == id);
@@ -282,6 +349,9 @@ namespace AppFletesMueve.Api.Controllers
                 ClienteNombre = $"{s.Cliente.Nombre} {s.Cliente.Apellido}".Trim(),
                 ConductorId = s.ConductorId,
                 VehiculoId = s.VehiculoId,
+                ConductorNombre = s.Conductor?.Usuario is { } u ? $"{u.Nombre} {u.Apellido}".Trim() : null,
+                VehiculoDescripcion = s.Vehiculo != null ? $"{s.Vehiculo.Marca} {s.Vehiculo.Modelo}" : null,
+                Patente = s.Vehiculo?.Patente,
                 TipoServicio = s.TipoServicio,
                 FechaSolicitud = s.FechaSolicitud,
                 FechaProgramada = s.FechaProgramada,

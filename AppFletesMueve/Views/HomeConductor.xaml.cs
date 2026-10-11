@@ -23,11 +23,10 @@ public partial class HomeConductor : ContentPage
     private VehiculoDisponibleDto? _vehiculoActivo;
     private List<VehiculoDisponibleDto> _misVehiculos = new();
     private Dictionary<Pin, SolicitudFleteDto> _pinToSolicitud = new();
-
     private SolicitudFleteDto? _solicitudPendiente;
     private SolicitudFleteDto? _solicitudEnCurso;
     private CancellationTokenSource? _ubicacionCts;
-
+    private bool _chatAbierto;
     public string Saludo { get; set; } = string.Empty;
 
     // Constructor compatible: permite inyección de servicios via DI o uso de instancias por defecto
@@ -67,6 +66,7 @@ public partial class HomeConductor : ContentPage
         var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
 
         var chatPage = _chatPageFactory.Create(_hub, group, user);
+        _chatAbierto = true;
         await Navigation.PushAsync(chatPage);
     }
 
@@ -75,6 +75,7 @@ public partial class HomeConductor : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _chatAbierto = false;
         await CargarEstadoAsync();
 
         try
@@ -101,6 +102,15 @@ public partial class HomeConductor : ContentPage
                             _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat";
                     });
                 });
+                _hub.On<int>("SolicitudTomada", id =>
+                {
+                    MainThread.BeginInvokeOnMainThread(async () => await OnSolicitudTomadaAsync(id));
+                });
+
+                _hub.On<SolicitudFleteDto>("SolicitudCancelada", s =>
+                {
+                    MainThread.BeginInvokeOnMainThread(async () => await OnSolicitudCanceladaAsync(s));
+                });
 
                 // Volver a unirse a los grupos si la conexión se restablece
                 _hub.Reconnected += async (string? connectionId) =>
@@ -124,6 +134,8 @@ public partial class HomeConductor : ContentPage
     protected override async void OnDisappearing()
     {
         base.OnDisappearing();
+        if (_chatAbierto)
+            return;
         try
         {
             if (_hub != null)
@@ -217,7 +229,26 @@ public partial class HomeConductor : ContentPage
             }
         });
     }
+    private async Task OnSolicitudTomadaAsync(int solicitudId)
+    {
+        // Otro conductor la tomó o el cliente la canceló: sacarla de la pantalla
+        if (_solicitudEnCurso != null || _solicitudPendiente?.SolicitudFleteId != solicitudId)
+            return;
 
+        _solicitudPendiente = null;
+        await CargarEstadoAsync(); // muestra la siguiente pendiente o "buscando viajes"
+    }
+
+    private async Task OnSolicitudCanceladaAsync(SolicitudFleteDto s)
+    {
+        if (_solicitudEnCurso?.SolicitudFleteId != s.SolicitudFleteId)
+            return;
+
+        StopUbicacionUpdates();
+        _solicitudEnCurso = null;
+        await DisplayAlertAsync("MUEVE", "El cliente canceló el viaje.", "Aceptar");
+        await CargarEstadoAsync();
+    }
     // ===================== ESTADO =====================
 
     private async Task CargarEstadoAsync()

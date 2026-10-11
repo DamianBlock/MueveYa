@@ -159,6 +159,9 @@ namespace AppFletesMueve.Api.Dtos
         public string ClienteNombre { get; set; } = string.Empty;
         public int? ConductorId { get; set; }
         public int? VehiculoId { get; set; }
+        public string? ConductorNombre { get; set; }
+        public string? VehiculoDescripcion { get; set; }
+        public string? Patente { get; set; }
         public TipoServicio TipoServicio { get; set; }
         public DateTime FechaSolicitud { get; set; }
         public DateTime? FechaProgramada { get; set; }

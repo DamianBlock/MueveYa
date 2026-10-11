@@ -96,6 +96,9 @@
 	  <MauiXaml Update="Views\SeleccionarCargaPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Views\ViajeClientePage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 	
 	<ItemGroup>

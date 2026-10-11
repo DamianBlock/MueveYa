@@ -35,7 +35,7 @@ namespace AppFletesMueve.Views
         private HubConnection? _hubCliente;
         private readonly IChatPageFactory _chatPageFactory;
         private int? _solicitudActivaId;
-        private Pin? _pinConductor;
+        // private Pin? _pinConductor;
         private readonly CotizacionViewModel _cotizacionVm = new();
         private bool _viajeActivoVerificado;
 

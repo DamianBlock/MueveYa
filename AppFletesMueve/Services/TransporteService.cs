@@ -51,6 +51,9 @@ namespace AppFletesMueve.Services
         public decimal Precio { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string TipoVehiculo { get; set; } = string.Empty;
+        public string? ConductorNombre { get; set; }
+        public string? VehiculoDescripcion { get; set; }
+        public string? Patente { get; set; }
         public List<CargaDto> Cargas { get; set; } = new();
     }
 
@@ -265,7 +268,27 @@ namespace AppFletesMueve.Services
             }
             catch { return null; }
         }
-        
+        public async Task<SolicitudFleteDto?> ObtenerSolicitudAsync(int solicitudId)
+        {
+            try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/{solicitudId}"); }
+            catch { return null; }
+        }
+
+        public async Task<SolicitudFleteDto?> ObtenerViajeActivoDeCliente(int clienteId)
+        {
+            try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/cliente/{clienteId}/activa"); }
+            catch { return null; }
+        }
+
+        public async Task<bool> CancelarSolicitudAsync(int solicitudId)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/cancelar", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch { return false; }
+        }
         public static double HaversineDistanceKm(double lat1, double lon1, double lat2, double lon2)
         {
             double R = 6371; // km

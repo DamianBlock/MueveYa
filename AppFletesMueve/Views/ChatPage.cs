@@ -1,9 +1,7 @@
-using Microsoft.Maui.Controls;
 using Microsoft.AspNetCore.SignalR.Client;
-using System.Collections.ObjectModel;
+using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
-using System;
-using System.Threading.Tasks;
+using System.Collections.ObjectModel;
 
 namespace AppFletesMueve.Views
 {
@@ -14,6 +12,10 @@ namespace AppFletesMueve.Views
         public string Message { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
         public bool IsMe { get; set; }
+
+        // Para bindear el estilo de la burbuja sin código en el template
+        public LayoutOptions Alineacion => IsMe ? LayoutOptions.End : LayoutOptions.Start;
+        public Color ColorFondo => IsMe ? Color.FromArgb("#DCF8C6") : Colors.LightGray;
     }
 
     public class ChatPage : ContentPage
@@ -22,17 +24,15 @@ namespace AppFletesMueve.Views
         private readonly string _groupName;
         private readonly string _userName;
         private readonly ObservableCollection<ChatMessage> _messages = new();
-#pragma warning disable 618
-        private ListView _listView;
-#pragma warning restore 618
+        private readonly CollectionView _lista;
 
-        private int _pageSize = 50;
-        private int _loaded = 0;
-        private int _total = 0;
-        private bool _loading = false;
+        private readonly int _pageSize = 50;
+        private int _loaded;
+        private int _total;
+        private bool _loading;
 
-        private Entry _entry = new Entry { Placeholder = "Escribir mensaje..." };
-        private Button _btn = new Button { Text = "Enviar" };
+        private readonly Entry _entry = new() { Placeholder = "Escribir mensaje..." };
+        private readonly Button _btn = new() { Text = "Enviar" };
 
         public ChatPage(HubConnection hub, string groupName, string userName)
         {
@@ -42,56 +42,79 @@ namespace AppFletesMueve.Views
 
             Title = "Chat";
 
-            _listView = new ListView
+            _lista = new CollectionView
             {
                 ItemsSource = _messages,
-                SeparatorVisibility = SeparatorVisibility.None,
+                SelectionMode = SelectionMode.None,
+                ItemsUpdatingScrollMode = ItemsUpdatingScrollMode.KeepItemsInView,
                 ItemTemplate = new DataTemplate(() =>
                 {
-                    var msgLabel = new Label { FontSize = 14 };
-                    msgLabel.SetBinding(Label.TextProperty, "Message");
+                    var msgLabel = new Label { FontSize = 14, TextColor = Colors.Black };
+                    msgLabel.SetBinding(Label.TextProperty, nameof(ChatMessage.Message));
+
                     var ts = new Label { FontSize = 10, TextColor = Colors.Gray };
-                    ts.SetBinding(Label.TextProperty, new Binding("Timestamp", stringFormat: "{0:HH:mm}"));
+                    ts.SetBinding(Label.TextProperty, new Binding(nameof(ChatMessage.Timestamp), stringFormat: "{0:HH:mm}"));
 
-                    var frame = new Frame { Padding = 8, HasShadow = false, CornerRadius = 8 };
-                    frame.Content = new StackLayout { Children = { msgLabel, ts } };
-
-                    frame.BindingContextChanged += (s, e) =>
+                    var burbuja = new Border
                     {
-                        if (frame.BindingContext is ChatMessage cm)
-                        {
-                            frame.BackgroundColor = cm.IsMe ? Color.FromArgb("#DCF8C6") : Colors.LightGray;
-                            frame.HorizontalOptions = cm.IsMe ? LayoutOptions.End : LayoutOptions.Start;
-                        }
+                        Padding = 8,
+                        Margin = new Thickness(8, 2),
+                        StrokeThickness = 0,
+                        MaximumWidthRequest = 280,
+                        StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(8) },
+                        Content = new VerticalStackLayout { Children = { msgLabel, ts } }
                     };
+                    burbuja.SetBinding(VisualElement.BackgroundColorProperty, nameof(ChatMessage.ColorFondo));
+                    burbuja.SetBinding(View.HorizontalOptionsProperty, nameof(ChatMessage.Alineacion));
 
-                    return new ViewCell { View = frame };
+                    return burbuja;
                 })
             };
 
-            _listView.ItemAppearing += async (s, e) =>
+            // Cargar mensajes más viejos cuando el usuario llega al principio de la lista
+            _lista.Scrolled += async (s, e) =>
             {
-                if (_loading) return;
-                if (_messages.Count == 0) return;
-                if (e.Item == _messages[0] && _loaded < _total)
+                if (_loading || _messages.Count == 0) return;
+                if (e.FirstVisibleItemIndex > 0) return;
+                if (_loaded >= _total) return;
+
+                if (_groupName.StartsWith("solicitud-") &&
+                    int.TryParse(_groupName.Substring("solicitud-".Length), out var sid))
                 {
                     _loading = true;
-                    if (_groupName.StartsWith("solicitud-") && int.TryParse(_groupName.Substring("solicitud-".Length), out var sid))
+                    try
                     {
                         await LoadPageAsync(sid, _loaded, _pageSize);
                         _loaded = _messages.Count;
                     }
-                    _loading = false;
+                    finally
+                    {
+                        _loading = false;
+                    }
                 }
             };
 
             _btn.Clicked += async (s, e) => await SendMessageAsync();
 
-            var panel = new Grid { RowDefinitions = { new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }, new RowDefinition { Height = GridLength.Auto } } };
-            Grid.SetRow(_listView, 0);
-            panel.Children.Add(_listView);
+            var panel = new Grid
+            {
+                RowDefinitions =
+                {
+                    new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
+                    new RowDefinition { Height = GridLength.Auto }
+                }
+            };
+            Grid.SetRow(_lista, 0);
+            panel.Children.Add(_lista);
 
-            var sendPanel = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }, new ColumnDefinition { Width = GridLength.Auto } } };
+            var sendPanel = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                    new ColumnDefinition { Width = GridLength.Auto }
+                }
+            };
             sendPanel.Children.Add(_entry);
             Grid.SetColumn(_btn, 1);
             sendPanel.Children.Add(_btn);
@@ -105,9 +128,15 @@ namespace AppFletesMueve.Views
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    var cm = new ChatMessage { User = user, Message = message, Timestamp = timestamp.ToLocalTime(), IsMe = user == _userName };
+                    var cm = new ChatMessage
+                    {
+                        User = user,
+                        Message = message,
+                        Timestamp = timestamp.ToLocalTime(),
+                        IsMe = user == _userName
+                    };
                     _messages.Add(cm);
-                    _listView.ScrollTo(cm, ScrollToPosition.End, true);
+                    _lista.ScrollTo(cm, position: ScrollToPosition.End, animate: true);
                 });
             });
         }
@@ -120,10 +149,12 @@ namespace AppFletesMueve.Views
                 if (_hub.State != HubConnectionState.Connected) await _hub.StartAsync();
                 await _hub.SendAsync("JoinGroup", _groupName);
 
-                if (_groupName.StartsWith("solicitud-") && int.TryParse(_groupName.Substring("solicitud-".Length), out var sid))
+                if (_groupName.StartsWith("solicitud-") &&
+                    int.TryParse(_groupName.Substring("solicitud-".Length), out var sid))
                 {
                     await LoadPageAsync(sid, 0, _pageSize);
                     _loaded = _messages.Count;
+
                     // Marcar como leídos los mensajes visibles al abrir (hasta ahora)
                     try
                     {
@@ -139,7 +170,7 @@ namespace AppFletesMueve.Views
         {
             try
             {
-                var http = new System.Net.Http.HttpClient();
+                var http = new HttpClient();
 #if DEBUG
                 var apiBase = "http://10.0.2.2:5051/api/";
 #else
@@ -171,9 +202,10 @@ namespace AppFletesMueve.Views
                 if (_hub.State != HubConnectionState.Connected) await _hub.StartAsync();
                 await _hub.SendAsync("SendMessageToGroup", _groupName, _userName, text);
                 _entry.Text = string.Empty;
+
                 var cm = new ChatMessage { User = _userName, Message = text, Timestamp = DateTime.Now, IsMe = true };
                 _messages.Add(cm);
-                _listView.ScrollTo(cm, ScrollToPosition.End, true);
+                _lista.ScrollTo(cm, position: ScrollToPosition.End, animate: true);
             }
             catch { }
         }
@@ -182,7 +214,7 @@ namespace AppFletesMueve.Views
         {
             try
             {
-                var http = new System.Net.Http.HttpClient();
+                var http = new HttpClient();
 #if DEBUG
                 var apiBase = "http://10.0.2.2:5051/api/";
 #else
@@ -190,13 +222,15 @@ namespace AppFletesMueve.Views
 #endif
                 var resp = await http.GetAsync(apiBase + $"Chat/solicitud/{solicitudId}?skip={skip}&take={take}");
                 if (!resp.IsSuccessStatusCode) return;
+
                 var json = await resp.Content.ReadAsStringAsync();
                 using var doc = System.Text.Json.JsonDocument.Parse(json);
                 var root = doc.RootElement;
+
                 if (root.TryGetProperty("total", out var totalEl)) _total = totalEl.GetInt32();
                 if (root.TryGetProperty("items", out var itemsEl) && itemsEl.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
-                    var list = new System.Collections.Generic.List<ChatMessage>();
+                    var list = new List<ChatMessage>();
                     foreach (var el in itemsEl.EnumerateArray())
                     {
                         var sender = el.GetProperty("sender").GetString() ?? string.Empty;
@@ -204,7 +238,8 @@ namespace AppFletesMueve.Views
                         var ts = el.GetProperty("timestampUtc").GetDateTime();
                         list.Add(new ChatMessage { User = sender, Message = msg, Timestamp = ts.ToLocalTime(), IsMe = sender == _userName });
                     }
-                    // prepend
+
+                    // Los más viejos van arriba
                     list.Reverse();
                     foreach (var m in list) _messages.Insert(0, m);
                 }
