@@ -27,10 +27,30 @@ namespace AppFletesMueve.Api.Controllers
 
             var patente = dto.Patente.Replace(" ", "").ToUpperInvariant();
 
-            var patenteUsada = await _context.Vehiculos
-                .AnyAsync(v => v.Patente == patente);
-            if (patenteUsada)
+            var existente = await _context.Vehiculos
+                .FirstOrDefaultAsync(v => v.Patente == patente);
+
+            if (existente != null)
+            {
+                // Misma patente que un vehículo que este conductor dio de baja: se reactiva
+                if (existente.ConductorId == dto.ConductorId && !existente.Activo)
+                {
+                    existente.Marca = dto.Marca.Trim();
+                    existente.Modelo = dto.Modelo.Trim();
+                    existente.Anio = dto.Anio;
+                    existente.TipoVehiculo = dto.TipoVehiculo;
+                    existente.CapacidadKg = dto.CapacidadKg;
+                    existente.VolumenM3 = dto.VolumenM3;
+                    existente.Imagen = dto.Imagen ?? existente.Imagen;
+                    existente.Activo = true;
+                    existente.Disponible = false;
+
+                    await _context.SaveChangesAsync();
+                    return Ok(ToDto(existente));
+                }
+
                 return Conflict(new { mensaje = "Ya existe un vehículo con esa patente" });
+            }
 
             var vehiculo = new Vehiculo
             {
@@ -42,7 +62,9 @@ namespace AppFletesMueve.Api.Controllers
                 TipoVehiculo = dto.TipoVehiculo,
                 CapacidadKg = dto.CapacidadKg,
                 VolumenM3 = dto.VolumenM3,
-                Disponible = true,
+                // Un vehículo nuevo no está en servicio hasta que el conductor lo elige al iniciar
+                Disponible = false,
+                Activo = true,
                 Imagen = dto.Imagen
             };
 
@@ -60,7 +82,7 @@ namespace AppFletesMueve.Api.Controllers
         {
             var vehiculos = await _context.Vehiculos
                 .AsNoTracking()
-                .Where(v => v.ConductorId == conductorId)
+                .Where(v => v.ConductorId == conductorId && v.Activo)
                 .OrderBy(v => v.Patente)
                 .ToListAsync();
 
@@ -74,7 +96,7 @@ namespace AppFletesMueve.Api.Controllers
         {
             var query = _context.Vehiculos
                 .AsNoTracking()
-                .Where(v => v.Disponible && v.Conductor.Disponible);
+                .Where(v => v.Activo && v.Disponible && v.Conductor.Disponible);
 
             if (tipo.HasValue)
                 query = query.Where(v => v.TipoVehiculo == tipo.Value);
@@ -84,6 +106,33 @@ namespace AppFletesMueve.Api.Controllers
                 .ToListAsync();
 
             return Ok(vehiculos.Select(ToDto));
+        }
+
+        // Baja lógica: los viajes anteriores siguen referenciando al vehículo
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DarDeBaja(int id)
+        {
+            var vehiculo = await _context.Vehiculos
+                .Include(v => v.Conductor)
+                .FirstOrDefaultAsync(v => v.VehiculoId == id && v.Activo);
+
+            if (vehiculo is null)
+                return NotFound();
+
+            var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
+                s.VehiculoId == id &&
+                (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso));
+            if (tieneViajeActivo)
+                return Conflict(new { mensaje = "El vehículo tiene un viaje en curso" });
+
+            if (vehiculo.Conductor.Disponible && vehiculo.Disponible)
+                return Conflict(new { mensaje = "Es el vehículo con el que estás trabajando. Detené el servicio antes de darlo de baja." });
+
+            vehiculo.Activo = false;
+            vehiculo.Disponible = false;
+
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
 
         private static VehiculoDto ToDto(Vehiculo v) => new()

@@ -87,7 +87,7 @@ namespace AppFletesMueve.Api.Controllers
             if (conductor is null)
                 return NotFound();
 
-            var elegido = conductor.Vehiculos.FirstOrDefault(v => v.VehiculoId == dto.VehiculoId);
+            var elegido = conductor.Vehiculos.FirstOrDefault(v => v.VehiculoId == dto.VehiculoId && v.Activo);
             if (elegido is null)
                 return BadRequest(new { mensaje = "El vehículo no pertenece a ese conductor" });
 
@@ -99,7 +99,7 @@ namespace AppFletesMueve.Api.Controllers
 
             // Solo el vehículo elegido queda disponible
             foreach (var v in conductor.Vehiculos)
-                v.Disponible = v.VehiculoId == elegido.VehiculoId;
+                v.Disponible = v.Activo && v.VehiculoId == elegido.VehiculoId;
 
             conductor.Disponible = true;
             if (dto.Latitud.HasValue) conductor.Latitud = dto.Latitud.Value;

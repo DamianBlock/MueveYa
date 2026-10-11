@@ -56,7 +56,9 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasKey("ChatMessageId");
 
-                    b.ToTable("ChatMessages", (string)null);
+                    b.HasIndex("SolicitudFleteId");
+
+                    b.ToTable("ChatMessages");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Conductor", b =>
@@ -88,7 +90,7 @@ namespace AppFletesMueve.Api.Migrations
                     b.HasIndex("UsuarioId")
                         .IsUnique();
 
-                    b.ToTable("Conductores", (string)null);
+                    b.ToTable("Conductores");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.SolicitudCarga", b =>
@@ -120,7 +122,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasIndex("TipoCargaId");
 
-                    b.ToTable("SolicitudesCarga", (string)null);
+                    b.ToTable("SolicitudesCarga");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.SolicitudFlete", b =>
@@ -200,7 +202,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasIndex("VehiculoId");
 
-                    b.ToTable("SolicitudesFlete", (string)null);
+                    b.ToTable("SolicitudesFlete");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.TipoCarga", b =>
@@ -223,46 +225,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasKey("TipoCargaId");
 
-                    b.ToTable("TiposCarga", (string)null);
-                });
-
-            modelBuilder.Entity("AppFletesMueve.Api.Models.ChatMessage", b =>
-                {
-                    b.Property<int>("ChatMessageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ChatMessageId"));
-
-                    b.Property<int>("SolicitudFleteId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Sender")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("TimestampUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("ReadTimestampUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ReadBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("ChatMessageId");
-
-                    b.HasIndex("SolicitudFleteId");
-
-                    b.ToTable("ChatMessages");
+                    b.ToTable("TiposCarga");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Usuario", b =>
@@ -303,7 +266,7 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.HasKey("UsuarioId");
 
-                    b.ToTable("Usuarios", (string)null);
+                    b.ToTable("Usuarios");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Vehiculo", b =>
@@ -313,6 +276,11 @@ namespace AppFletesMueve.Api.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("VehiculoId"));
+
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<int>("Anio")
                         .HasColumnType("integer");
@@ -357,7 +325,7 @@ namespace AppFletesMueve.Api.Migrations
                     b.HasIndex("Patente")
                         .IsUnique();
 
-                    b.ToTable("Vehiculos", (string)null);
+                    b.ToTable("Vehiculos");
                 });
 
             modelBuilder.Entity("AppFletesMueve.Api.Models.Conductor", b =>

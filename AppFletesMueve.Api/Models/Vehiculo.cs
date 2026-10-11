@@ -24,5 +24,6 @@ namespace AppFletesMueve.Api.Models
         public bool Disponible { get; set; }
 
         public string? Imagen { get; set; }
+        public bool Activo { get; set; } = true;
     }
 }

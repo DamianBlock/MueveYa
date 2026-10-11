@@ -91,6 +91,7 @@ namespace AppFletesMueve.Api.Data
             });
 
             modelBuilder.Entity<ChatMessage>().HasIndex(m => m.SolicitudFleteId);
+            modelBuilder.Entity<Vehiculo>().Property(v => v.Activo).HasDefaultValue(true);
         }
     }
 }
