@@ -355,5 +355,20 @@ namespace AppFletesMueve.Services
             try { var r = await _httpClient.GetFromJsonAsync<List<TipoCargaDto>>(ApiUrl + "TiposCarga"); return r ?? new List<TipoCargaDto>(); }
             catch { return new List<TipoCargaDto>(); }
         }
+        public async Task<(bool Ok, string? Mensaje)> DarDeBajaVehiculoAsync(int vehiculoId)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync(ApiUrl + $"Vehiculos/{vehiculoId}");
+                if (!response.IsSuccessStatusCode)
+                    return (false, await LeerMensajeError(response));
+
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
+        }
     }
 }

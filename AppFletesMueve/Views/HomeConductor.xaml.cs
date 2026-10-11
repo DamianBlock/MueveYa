@@ -323,6 +323,7 @@ public partial class HomeConductor : ContentPage
         }
 
         btnServicio.IsVisible = _conductorId != null;
+        btnMisVehiculos.IsVisible = _conductorId != null;   
     }
 
     private void MostrarSinViajes(string mensaje)
@@ -621,7 +622,10 @@ public partial class HomeConductor : ContentPage
     {
         await Navigation.PushAsync(new CompletarPerfilConductorPage());
     }
-
+    private async void MisVehiculos_Clicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new MisVehiculosPage());
+    }
     private async void AceptarViaje_Clicked(object? sender, EventArgs e)
     {
         try

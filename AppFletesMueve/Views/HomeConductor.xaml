@@ -66,6 +66,16 @@
                             HeightRequest="50"
                             CornerRadius="12"
                             Clicked="Servicio_Clicked"/>
+                    <Button x:Name="btnMisVehiculos"
+                            Text="Mis vehículos"
+                            BackgroundColor="White"
+                            TextColor="#E65100"
+                            BorderColor="#E65100"
+                            BorderWidth="1"
+                            HeightRequest="50"
+                            CornerRadius="12"
+                            IsVisible="False"
+                            Clicked="MisVehiculos_Clicked"/>
                 </VerticalStackLayout>
             </Border>
             <!-- MAPA CONDUCTOR -->

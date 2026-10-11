@@ -1,0 +1,173 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:AppFletesMueve.Views"
+    x:Class="AppFletesMueve.Views.MisVehiculosPage"
+    BackgroundColor="#F5F5F5"
+    NavigationPage.HasNavigationBar="False">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="15">
+
+            <!-- CABECERA -->
+            <Grid BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0"
+                       Text="&#8592;"
+                       FontSize="26"
+                       TextColor="White"
+                       VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="Volver_Tapped"/>
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Label Grid.Column="1"
+                       Text="Mis vehículos"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Grid>
+
+            <Label x:Name="lblSinVehiculos"
+                   Text="Todavía no tenés vehículos cargados."
+                   TextColor="#757575"
+                   HorizontalOptions="Center"
+                   IsVisible="False"/>
+
+            <!-- LISTA DE VEHÍCULOS -->
+            <VerticalStackLayout x:Name="listaVehiculos" Margin="15,0" Spacing="10">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="views:VehiculoItem">
+                        <Border StrokeShape="RoundRectangle 12"
+                                StrokeThickness="0"
+                                BackgroundColor="White"
+                                Padding="15">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding Titulo}"
+                                           FontAttributes="Bold"
+                                           FontSize="16"
+                                           TextColor="#212121"/>
+                                    <Label Text="{Binding Subtitulo}"
+                                           FontSize="13"
+                                           TextColor="#757575"/>
+                                    <Label Text="{Binding Detalle}"
+                                           FontSize="12"
+                                           TextColor="#757575"/>
+                                </VerticalStackLayout>
+
+                                <Button Grid.Column="1"
+                                        Text="Dar de baja"
+                                        BackgroundColor="White"
+                                        TextColor="#C62828"
+                                        BorderColor="#C62828"
+                                        BorderWidth="1"
+                                        CornerRadius="10"
+                                        HeightRequest="40"
+                                        VerticalOptions="Center"
+                                        CommandParameter="{Binding VehiculoId}"
+                                        Clicked="DarDeBaja_Clicked"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <!-- FORMULARIO: NUEVO VEHÍCULO -->
+            <Border x:Name="panelFormulario"
+                    IsVisible="False"
+                    Margin="15,0"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="15">
+                <VerticalStackLayout Spacing="10">
+
+                    <Label Text="Nuevo vehículo"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="#E65100"/>
+
+                    <Entry x:Name="txtPatente"
+                           Placeholder="Patente (ej: AB123CD)"
+                           PlaceholderColor="#757575"
+                           TextColor="Black"
+                           BackgroundColor="White"/>
+
+                    <Entry x:Name="txtMarca"
+                           Placeholder="Marca"
+                           PlaceholderColor="#757575"
+                           TextColor="Black"
+                           BackgroundColor="White"/>
+
+                    <Entry x:Name="txtModelo"
+                           Placeholder="Modelo"
+                           PlaceholderColor="#757575"
+                           TextColor="Black"
+                           BackgroundColor="White"/>
+
+                    <Entry x:Name="txtAnio"
+                           Placeholder="Año"
+                           PlaceholderColor="#757575"
+                           TextColor="Black"
+                           BackgroundColor="White"
+                           Keyboard="Numeric"/>
+
+                    <Picker x:Name="pickerTipo"
+                            Title="Tipo de vehículo"
+                            TitleColor="#757575"
+                            TextColor="Black"
+                            BackgroundColor="White"
+                            SelectedIndexChanged="Tipo_SelectedIndexChanged"/>
+
+                    <Entry x:Name="txtCapacidadKg"
+                           Placeholder="Capacidad de carga (kg)"
+                           PlaceholderColor="#757575"
+                           TextColor="Black"
+                           BackgroundColor="White"
+                           Keyboard="Numeric"/>
+
+                    <Entry x:Name="txtVolumenM3"
+                           Placeholder="Volumen (m³)"
+                           PlaceholderColor="#757575"
+                           TextColor="Black"
+                           BackgroundColor="White"
+                           Keyboard="Numeric"/>
+
+                    <Button x:Name="btnGuardar"
+                            Text="GUARDAR VEHÍCULO"
+                            BackgroundColor="#2E7D32"
+                            TextColor="White"
+                            FontAttributes="Bold"
+                            HeightRequest="50"
+                            CornerRadius="12"
+                            Clicked="Guardar_Clicked"/>
+
+                    <Button Text="Cancelar"
+                            BackgroundColor="White"
+                            TextColor="#757575"
+                            BorderColor="#757575"
+                            BorderWidth="1"
+                            HeightRequest="50"
+                            CornerRadius="12"
+                            Clicked="CancelarFormulario_Clicked"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button x:Name="btnAgregar"
+                    Text="AGREGAR VEHÍCULO"
+                    BackgroundColor="#E65100"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    CornerRadius="12"
+                    Margin="15,0,15,20"
+                    Clicked="Agregar_Clicked"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
