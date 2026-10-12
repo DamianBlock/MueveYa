@@ -202,10 +202,7 @@ namespace AppFletesMueve.Views
                 if (_hub.State != HubConnectionState.Connected) await _hub.StartAsync();
                 await _hub.SendAsync("SendMessageToGroup", _groupName, _userName, text);
                 _entry.Text = string.Empty;
-
-                var cm = new ChatMessage { User = _userName, Message = text, Timestamp = DateTime.Now, IsMe = true };
-                _messages.Add(cm);
-                _lista.ScrollTo(cm, position: ScrollToPosition.End, animate: true);
+                // El mensaje se agrega cuando vuelve del servidor (ReceiveMessage), así no se duplica
             }
             catch { }
         }

@@ -56,6 +56,12 @@
                     <Label x:Name="lblDetalle"
                            FontSize="13"
                            TextColor="#757575"/>
+                    
+                    <Label x:Name="lblContador"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="#2E7D32"
+                           IsVisible="False"/>
 
                     <VerticalStackLayout x:Name="panelConductor" Spacing="4" IsVisible="False">
                         <Label Text="Conductor" TextColor="#757575" FontSize="12"/>

@@ -301,7 +301,27 @@ namespace AppFletesMueve.Views
                 System.Diagnostics.Debug.WriteLine(ex);
             }
         }
+        private void BorrarOrigen_Clicked(object? sender, EventArgs e)
+        {
+            _debounceCtsOrigen?.Cancel();
+            listaSugerenciasOrigen.IsVisible = false;
+            _origenDescripcionSeleccionada = string.Empty;
+            txtOrigen.Text = string.Empty;
+            _ultimoOrigen = null; // vuelve a usar "Mi ubicación actual"
+            lblOrigenResumen.Text = string.Empty;
+            ActualizarTrayecto();
+        }
 
+        private void BorrarDestino_Clicked(object? sender, EventArgs e)
+        {
+            _debounceCtsDestino?.Cancel();
+            listaSugerencias.IsVisible = false;
+            _destinoDescripcionSeleccionada = string.Empty;
+            txtDestino.Text = string.Empty;
+            _ultimoDestino = null;
+            lblDestinoResumen.Text = string.Empty;
+            ActualizarTrayecto();
+        }
         private async void CerrarSesion_Tapped(
             object? sender,
             TappedEventArgs e)

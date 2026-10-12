@@ -91,9 +91,9 @@
                             BackgroundColor="#FFFFFF"
                             TextChanged="TxtOrigen_TextChanged"/>
                         <Button
-                            Text="Buscar"
+                            Text="Borrar"
                             Grid.Column="1"
-                            Clicked="BuscarOrigen_Clicked"
+                            Clicked="BorrarOrigen_Clicked"
                             BackgroundColor="#E65100"
                             TextColor="#FFFFFF"/>
                         <Button
@@ -133,9 +133,9 @@
                             BackgroundColor="#FFFFFF"
                             TextChanged="TxtDestino_TextChanged"/>
                         <Button
-                            Text="Buscar"
+                            Text="Borrar"
                             Grid.Column="1"
-                            Clicked="BuscarDestino_Clicked"
+                            Clicked="BorrarDestino_Clicked"
                             BackgroundColor="#E65100"
                             TextColor="White"/>
                         <Button

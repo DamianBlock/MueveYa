@@ -15,7 +15,10 @@ public partial class ViajeClientePage : ContentPage
 
     private HubConnection? _hub;
     private Pin? _pinConductor;
+    private SolicitudFleteDto? _solicitud;
     private CancellationTokenSource? _pollingCts;
+    private IDispatcherTimer? _cronometro;
+    private TimeSpan _desfaseServidor = TimeSpan.Zero;
     private bool _rutaDibujada;
     private bool _chatAbierto;
 
@@ -35,12 +38,14 @@ public partial class ViajeClientePage : ContentPage
         await RecargarAsync();
         await ConectarHubAsync();
         IniciarPolling();
+        IniciarCronometro();
     }
 
     protected override async void OnDisappearing()
     {
         base.OnDisappearing();
         DetenerPolling();
+        DetenerCronometro();
 
         // Si se abrió el chat encima, se mantiene la conexión porque el chat la usa
         if (_chatAbierto)
@@ -63,6 +68,7 @@ public partial class ViajeClientePage : ContentPage
                     .Build();
 
                 _hub.On<SolicitudFleteDto>("SolicitudAceptada", _ => RecargarEnUi());
+                _hub.On<SolicitudFleteDto>("EtapaActualizada", _ => RecargarEnUi());
                 _hub.On<SolicitudFleteDto>("SolicitudCompletada", _ => RecargarEnUi());
                 _hub.On<SolicitudFleteDto>("SolicitudCancelada", _ => RecargarEnUi());
 
@@ -81,9 +87,11 @@ public partial class ViajeClientePage : ContentPage
                 _hub.Reconnected += async (string? _) => await UnirseGrupoAsync();
             }
 
+            // Si volvemos del chat la conexión ya está activa
             if (_hub.State == HubConnectionState.Disconnected)
                 await _hub.StartAsync();
 
+            // El chat sale del grupo al cerrarse: volver a unirse
             await UnirseGrupoAsync();
         }
         catch (Exception ex)
@@ -170,6 +178,64 @@ public partial class ViajeClientePage : ContentPage
         catch { }
     }
 
+    // ===================== CONTADOR DE ESPERA =====================
+
+    private void IniciarCronometro()
+    {
+        DetenerCronometro();
+        _cronometro = Dispatcher.CreateTimer();
+        _cronometro.Interval = TimeSpan.FromSeconds(1);
+        _cronometro.Tick += (_, _) => ActualizarContador();
+        _cronometro.Start();
+    }
+
+    private void DetenerCronometro()
+    {
+        if (_cronometro == null)
+            return;
+
+        _cronometro.Stop();
+        _cronometro = null;
+    }
+
+    private void ActualizarContador()
+    {
+        var s = _solicitud;
+
+        DateTime? desde = s?.Estado switch
+        {
+            "EnOrigen" => s.LlegadaOrigenUtc,
+            "EnDestino" => s.LlegadaDestinoUtc,
+            _ => null
+        };
+
+        if (s == null || desde == null)
+        {
+            lblContador.IsVisible = false;
+            return;
+        }
+
+        var minutos = s.Estado == "EnOrigen" ? s.MinutosEsperaCarga : s.MinutosEsperaDescarga;
+        var etiqueta = s.Estado == "EnOrigen" ? "Tiempo de carga" : "Tiempo de descarga";
+
+        var ahoraServidor = DateTime.UtcNow + _desfaseServidor;
+        var restante = TimeSpan.FromMinutes(minutos) - (ahoraServidor - desde.Value);
+
+        lblContador.IsVisible = true;
+
+        if (restante >= TimeSpan.Zero)
+        {
+            lblContador.Text = $"{etiqueta} incluido: {(int)restante.TotalMinutes:00}:{restante.Seconds:00}";
+            lblContador.TextColor = Color.FromArgb("#2E7D32");
+        }
+        else
+        {
+            var extra = -restante;
+            lblContador.Text = $"{etiqueta}: tiempo extra +{(int)extra.TotalMinutes:00}:{extra.Seconds:00}";
+            lblContador.TextColor = Color.FromArgb("#C62828");
+        }
+    }
+
     // ===================== ESTADO =====================
 
     private async Task RecargarAsync()
@@ -177,6 +243,11 @@ public partial class ViajeClientePage : ContentPage
         var solicitud = await _transporteService.ObtenerSolicitudAsync(_solicitudId);
         if (solicitud == null)
             return;
+
+        _solicitud = solicitud;
+
+        // Diferencia entre el reloj del servidor y el del teléfono
+        _desfaseServidor = solicitud.AhoraUtc == default ? TimeSpan.Zero : solicitud.AhoraUtc - DateTime.UtcNow;
 
         AplicarEstado(solicitud);
     }
@@ -200,20 +271,42 @@ public partial class ViajeClientePage : ContentPage
                 break;
 
             case "Aceptada":
-            case "EnCurso":
-                lblEstado.Text = s.Estado == "EnCurso" ? "Viaje en curso" : "Tu conductor está en camino";
+                lblEstado.Text = "Tu conductor está en camino";
                 lblEstado.TextColor = Color.FromArgb("#2E7D32");
                 lblDetalle.Text = "Podés seguir su ubicación en el mapa y escribirle por el chat.";
-                lblConductor.Text = s.ConductorNombre ?? "Conductor asignado";
-                lblVehiculo.Text = $"{s.VehiculoDescripcion} · {s.Patente}";
-                panelConductor.IsVisible = true;
+                MostrarConductor(s);
                 ConfigurarBotones(chat: true, textoCancelar: "Cancelar viaje", volver: false);
+                break;
+
+            case "EnOrigen":
+                lblEstado.Text = "Tu conductor llegó";
+                lblEstado.TextColor = Color.FromArgb("#2E7D32");
+                lblDetalle.Text = "Es el momento de cargar. El viaje empieza cuando el conductor lo inicia.";
+                MostrarConductor(s);
+                ConfigurarBotones(chat: true, textoCancelar: "Cancelar viaje", volver: false);
+                break;
+
+            case "EnCurso":
+                lblEstado.Text = "Viaje en curso";
+                lblEstado.TextColor = Color.FromArgb("#2E7D32");
+                lblDetalle.Text = "Van camino al destino. Podés seguir el recorrido en el mapa.";
+                MostrarConductor(s);
+                ConfigurarBotones(chat: true, textoCancelar: null, volver: false);
+                break;
+
+            case "EnDestino":
+                lblEstado.Text = "Llegaron al destino";
+                lblEstado.TextColor = Color.FromArgb("#2E7D32");
+                lblDetalle.Text = "Es el momento de descargar. El viaje termina cuando el conductor lo finaliza.";
+                MostrarConductor(s);
+                ConfigurarBotones(chat: true, textoCancelar: null, volver: false);
                 break;
 
             case "Completada":
                 lblEstado.Text = "Viaje finalizado";
                 lblEstado.TextColor = Color.FromArgb("#2E7D32");
                 lblDetalle.Text = "Gracias por viajar con MUEVE.";
+                MostrarConductor(s);
                 ConfigurarBotones(chat: false, textoCancelar: null, volver: true);
                 DetenerPolling();
                 break;
@@ -231,6 +324,15 @@ public partial class ViajeClientePage : ContentPage
                 lblEstado.Text = s.Estado;
                 break;
         }
+
+        ActualizarContador();
+    }
+
+    private void MostrarConductor(SolicitudFleteDto s)
+    {
+        lblConductor.Text = s.ConductorNombre ?? "Conductor asignado";
+        lblVehiculo.Text = $"{s.VehiculoDescripcion} · {s.Patente}";
+        panelConductor.IsVisible = true;
     }
 
     private void ConfigurarBotones(bool chat, string? textoCancelar, bool volver)
@@ -294,10 +396,10 @@ public partial class ViajeClientePage : ContentPage
             return;
         }
 
-        _chatAbierto = true;
-
         var group = $"solicitud-{_solicitudId}";
         var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Cliente");
+
+        _chatAbierto = true;
         await Navigation.PushAsync(new ChatPage(_hub, group, user));
     }
 
@@ -310,7 +412,8 @@ public partial class ViajeClientePage : ContentPage
         var ok = await _transporteService.CancelarSolicitudAsync(_solicitudId);
         if (!ok)
         {
-            await DisplayAlertAsync("MUEVE", "No se pudo cancelar. Probá de nuevo.", "Aceptar");
+            await DisplayAlertAsync("MUEVE", "No se pudo cancelar. Si el viaje ya está en marcha, no se puede cancelar.", "Aceptar");
+            await RecargarAsync();
             return;
         }
 

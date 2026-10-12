@@ -55,6 +55,12 @@ namespace AppFletesMueve.Services
         public string? VehiculoDescripcion { get; set; }
         public string? Patente { get; set; }
         public List<CargaDto> Cargas { get; set; } = new();
+        public DateTime? LlegadaOrigenUtc { get; set; }
+        public DateTime? InicioViajeUtc { get; set; }
+        public DateTime? LlegadaDestinoUtc { get; set; }
+        public DateTime AhoraUtc { get; set; }
+        public int MinutosEsperaCarga { get; set; }
+        public int MinutosEsperaDescarga { get; set; }
     }
 
     public class TipoCargaDto { public int TipoCargaId { get; set; } public string Nombre { get; set; } = string.Empty; public double PesoEstimadoKg { get; set; } public double VolumenEstimadoM3 { get; set; } }
@@ -370,5 +376,23 @@ namespace AppFletesMueve.Services
                 return (false, ex.Message);
             }
         }
+        private async Task<SolicitudFleteDto?> AvanzarEtapaAsync(int solicitudId, string accion)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/{accion}", null);
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                return await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
+            }
+            catch { return null; }
+        }
+
+        public Task<SolicitudFleteDto?> LlegueAlOrigenAsync(int solicitudId) => AvanzarEtapaAsync(solicitudId, "llegue-origen");
+
+        public Task<SolicitudFleteDto?> IniciarViajeAsync(int solicitudId) => AvanzarEtapaAsync(solicitudId, "iniciar");
+
+        public Task<SolicitudFleteDto?> LlegueAlDestinoAsync(int solicitudId) => AvanzarEtapaAsync(solicitudId, "llegue-destino");
     }
 }

@@ -20,13 +20,20 @@ public partial class HomeConductor : ContentPage
     private int? _conductorId;
     private bool _enServicio;
     private bool _cambiandoServicio;
+    private bool _chatAbierto;
+    private bool _sincronizando;
+    private CancellationTokenSource? _syncCts;
+    private IDispatcherTimer? _cronometro;
+    private TimeSpan _desfaseServidor = TimeSpan.Zero;
+
     private VehiculoDisponibleDto? _vehiculoActivo;
     private List<VehiculoDisponibleDto> _misVehiculos = new();
     private Dictionary<Pin, SolicitudFleteDto> _pinToSolicitud = new();
+
     private SolicitudFleteDto? _solicitudPendiente;
     private SolicitudFleteDto? _solicitudEnCurso;
     private CancellationTokenSource? _ubicacionCts;
-    private bool _chatAbierto;
+
     public string Saludo { get; set; } = string.Empty;
 
     // Constructor compatible: permite inyección de servicios via DI o uso de instancias por defecto
@@ -66,6 +73,8 @@ public partial class HomeConductor : ContentPage
         var user = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
 
         var chatPage = _chatPageFactory.Create(_hub, group, user);
+
+        // Mantener la conexión mientras el chat está abierto
         _chatAbierto = true;
         await Navigation.PushAsync(chatPage);
     }
@@ -76,7 +85,10 @@ public partial class HomeConductor : ContentPage
     {
         base.OnAppearing();
         _chatAbierto = false;
+
         await CargarEstadoAsync();
+        IniciarSincronizacion();
+        IniciarCronometro();
 
         try
         {
@@ -93,23 +105,33 @@ public partial class HomeConductor : ContentPage
                     MainThread.BeginInvokeOnMainThread(() => OnNuevaSolicitud(solicitud));
                 });
 
-                // Escuchar actualizaciones de conteo de mensajes no leídos via SignalR
-                _hub.On<int>("UnreadCountUpdated", count =>
-                {
-                    MainThread.BeginInvokeOnMainThread(() =>
-                    {
-                        if (_chatToolbarItem != null)
-                            _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat";
-                    });
-                });
+                // Otro conductor la tomó o el cliente la canceló antes de aceptarla
                 _hub.On<int>("SolicitudTomada", id =>
                 {
                     MainThread.BeginInvokeOnMainThread(async () => await OnSolicitudTomadaAsync(id));
                 });
 
+                // El cliente canceló un viaje que ya había aceptado
                 _hub.On<SolicitudFleteDto>("SolicitudCancelada", s =>
                 {
                     MainThread.BeginInvokeOnMainThread(async () => await OnSolicitudCanceladaAsync(s));
+                });
+
+                // Cambio de etapa hecho desde otro dispositivo de la misma cuenta
+                _hub.On<SolicitudFleteDto>("EtapaActualizada", _ =>
+                {
+                    MainThread.BeginInvokeOnMainThread(async () => await SincronizarAsync());
+                });
+
+                // Escuchar actualizaciones de conteo de mensajes no leídos via SignalR
+                _hub.On<int>("UnreadCountUpdated", count =>
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        btnChatConductor.Text = count > 0 ? $"Chat con el cliente ({count})" : "Chat con el cliente";
+                        if (_chatToolbarItem != null)
+                            _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat";
+                    });
                 });
 
                 // Volver a unirse a los grupos si la conexión se restablece
@@ -122,7 +144,11 @@ public partial class HomeConductor : ContentPage
                 TransporteService.SolicitudCreada += OnSolicitudCreadaLocal;
             }
 
-            await _hub.StartAsync();
+            // Si volvemos del chat la conexión ya está activa
+            if (_hub.State == HubConnectionState.Disconnected)
+                await _hub.StartAsync();
+
+            // El chat sale del grupo de la solicitud al cerrarse: volver a unirse
             await UnirseGruposAsync();
         }
         catch (Exception ex)
@@ -134,8 +160,13 @@ public partial class HomeConductor : ContentPage
     protected override async void OnDisappearing()
     {
         base.OnDisappearing();
+        DetenerSincronizacion();
+        DetenerCronometro();
+
+        // Si se abrió el chat encima, se mantiene la conexión porque el chat la usa
         if (_chatAbierto)
             return;
+
         try
         {
             if (_hub != null)
@@ -208,6 +239,27 @@ public partial class HomeConductor : ContentPage
         }
     }
 
+    private async Task OnSolicitudTomadaAsync(int solicitudId)
+    {
+        // Otro conductor la tomó o el cliente la canceló: sacarla de la pantalla
+        if (_solicitudEnCurso != null || _solicitudPendiente?.SolicitudFleteId != solicitudId)
+            return;
+
+        _solicitudPendiente = null;
+        await CargarEstadoAsync(); // muestra la siguiente pendiente o "buscando viajes"
+    }
+
+    private async Task OnSolicitudCanceladaAsync(SolicitudFleteDto s)
+    {
+        if (_solicitudEnCurso?.SolicitudFleteId != s.SolicitudFleteId)
+            return;
+
+        StopUbicacionUpdates();
+        _solicitudEnCurso = null;
+        await DisplayAlertAsync("MUEVE", "El cliente canceló el viaje.", "Aceptar");
+        await CargarEstadoAsync();
+    }
+
     private void OnSolicitudCreadaLocal(SolicitudFleteDto solicitud)
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -229,26 +281,173 @@ public partial class HomeConductor : ContentPage
             }
         });
     }
-    private async Task OnSolicitudTomadaAsync(int solicitudId)
-    {
-        // Otro conductor la tomó o el cliente la canceló: sacarla de la pantalla
-        if (_solicitudEnCurso != null || _solicitudPendiente?.SolicitudFleteId != solicitudId)
-            return;
 
-        _solicitudPendiente = null;
-        await CargarEstadoAsync(); // muestra la siguiente pendiente o "buscando viajes"
+    // ===================== RESPALDO: CONSULTA PERIÓDICA =====================
+
+    private void IniciarSincronizacion()
+    {
+        DetenerSincronizacion();
+        _syncCts = new CancellationTokenSource();
+        var token = _syncCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(10000, token);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
+
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    try { await SincronizarAsync(); }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error sincronizando: {ex}"); }
+                });
+            }
+        }, token);
     }
 
-    private async Task OnSolicitudCanceladaAsync(SolicitudFleteDto s)
+    private void DetenerSincronizacion()
     {
-        if (_solicitudEnCurso?.SolicitudFleteId != s.SolicitudFleteId)
+        try
+        {
+            _syncCts?.Cancel();
+            _syncCts = null;
+        }
+        catch { }
+    }
+
+    private async Task SincronizarAsync()
+    {
+        if (_sincronizando || _cambiandoServicio || _conductorId == null)
             return;
 
-        StopUbicacionUpdates();
-        _solicitudEnCurso = null;
-        await DisplayAlertAsync("MUEVE", "El cliente canceló el viaje.", "Aceptar");
-        await CargarEstadoAsync();
+        _sincronizando = true;
+        try
+        {
+            // Con un viaje en curso: ¿lo cancelaron, terminó o cambió de etapa?
+            if (_solicitudEnCurso != null)
+            {
+                var actual = await _transporteService.ObtenerSolicitudAsync(_solicitudEnCurso.SolicitudFleteId);
+                if (actual == null)
+                    return; // sin conexión
+
+                if (actual.Estado == "Cancelada" || actual.Estado == "Completada")
+                {
+                    StopUbicacionUpdates();
+                    _solicitudEnCurso = null;
+
+                    await DisplayAlertAsync("MUEVE",
+                        actual.Estado == "Cancelada" ? "El cliente canceló el viaje." : "El viaje ya fue finalizado.",
+                        "Aceptar");
+
+                    await CargarEstadoAsync();
+                    return;
+                }
+
+                if (actual.Estado != _solicitudEnCurso.Estado)
+                {
+                    AsignarViajeEnCurso(actual);
+                    MostrarViajeEnCurso(actual);
+                }
+
+                return;
+            }
+
+            // En servicio y sin viaje: mantener al día la solicitud que se muestra
+            var vehiculo = _vehiculoActivo;
+            if (!_enServicio || vehiculo == null)
+                return;
+
+            var pendientes = await _transporteService.ObtenerSolicitudesPendientes(vehiculo.TipoVehiculo);
+            var primera = pendientes.FirstOrDefault();
+
+            if (primera?.SolicitudFleteId == _solicitudPendiente?.SolicitudFleteId)
+                return;
+
+            _solicitudPendiente = primera;
+            if (primera != null)
+                MostrarViajePendiente(primera);
+            else
+                MostrarSinViajes("Buscando viajes disponibles...");
+        }
+        finally
+        {
+            _sincronizando = false;
+        }
     }
+
+    // ===================== CONTADOR DE ESPERA =====================
+
+    private void IniciarCronometro()
+    {
+        DetenerCronometro();
+        _cronometro = Dispatcher.CreateTimer();
+        _cronometro.Interval = TimeSpan.FromSeconds(1);
+        _cronometro.Tick += (_, _) => ActualizarContador();
+        _cronometro.Start();
+    }
+
+    private void DetenerCronometro()
+    {
+        if (_cronometro == null)
+            return;
+
+        _cronometro.Stop();
+        _cronometro = null;
+    }
+
+    private void AsignarViajeEnCurso(SolicitudFleteDto s)
+    {
+        _solicitudEnCurso = s;
+
+        // Diferencia entre el reloj del servidor y el del teléfono
+        _desfaseServidor = s.AhoraUtc == default ? TimeSpan.Zero : s.AhoraUtc - DateTime.UtcNow;
+    }
+
+    private void ActualizarContador()
+    {
+        var s = _solicitudEnCurso;
+
+        DateTime? desde = s?.Estado switch
+        {
+            "EnOrigen" => s.LlegadaOrigenUtc,
+            "EnDestino" => s.LlegadaDestinoUtc,
+            _ => null
+        };
+
+        if (s == null || desde == null)
+        {
+            lblContador.IsVisible = false;
+            return;
+        }
+
+        var minutos = s.Estado == "EnOrigen" ? s.MinutosEsperaCarga : s.MinutosEsperaDescarga;
+        var etiqueta = s.Estado == "EnOrigen" ? "Espera de carga" : "Espera de descarga";
+
+        var ahoraServidor = DateTime.UtcNow + _desfaseServidor;
+        var restante = TimeSpan.FromMinutes(minutos) - (ahoraServidor - desde.Value);
+
+        lblContador.IsVisible = true;
+
+        if (restante >= TimeSpan.Zero)
+        {
+            lblContador.Text = $"{etiqueta}: {(int)restante.TotalMinutes:00}:{restante.Seconds:00} incluidos";
+            lblContador.TextColor = Color.FromArgb("#2E7D32");
+        }
+        else
+        {
+            var extra = -restante;
+            lblContador.Text = $"{etiqueta}: tiempo extra +{(int)extra.TotalMinutes:00}:{extra.Seconds:00}";
+            lblContador.TextColor = Color.FromArgb("#C62828");
+        }
+    }
+
     // ===================== ESTADO =====================
 
     private async Task CargarEstadoAsync()
@@ -271,14 +470,17 @@ public partial class HomeConductor : ContentPage
         _misVehiculos = await _transporteService.ObtenerVehiculosDeConductor(_conductorId.Value);
 
         // Prioridad 1: ¿ya tengo un viaje en curso?
-        _solicitudEnCurso = await _transporteService.ObtenerViajeActivoDeConductor(_conductorId.Value);
-        if (_solicitudEnCurso != null)
+        var activo = await _transporteService.ObtenerViajeActivoDeConductor(_conductorId.Value);
+        if (activo != null)
         {
-            _vehiculoActivo = _misVehiculos.FirstOrDefault(v => v.VehiculoId == _solicitudEnCurso.VehiculoId);
+            AsignarViajeEnCurso(activo);
+            _vehiculoActivo = _misVehiculos.FirstOrDefault(v => v.VehiculoId == activo.VehiculoId);
             ActualizarUiServicio();
-            MostrarViajeEnCurso(_solicitudEnCurso);
+            MostrarViajeEnCurso(activo);
             return;
         }
+
+        _solicitudEnCurso = null;
 
         // El vehículo en servicio es el único marcado como disponible
         var vehiculo = _enServicio ? _misVehiculos.FirstOrDefault(v => v.Disponible) : null;
@@ -323,7 +525,7 @@ public partial class HomeConductor : ContentPage
         }
 
         btnServicio.IsVisible = _conductorId != null;
-        btnMisVehiculos.IsVisible = _conductorId != null;   
+        btnMisVehiculos.IsVisible = _conductorId != null;
     }
 
     private void MostrarSinViajes(string mensaje)
@@ -353,6 +555,8 @@ public partial class HomeConductor : ContentPage
         lblVehiculo.Text = TextoVehiculoActivo();
         lblPrecio.Text = $"$ {s.Precio:N0}";
 
+        lblContador.IsVisible = false;
+        btnChatConductor.IsVisible = false;
         btnAccion.Text = "ACEPTAR VIAJE";
 
         try
@@ -373,7 +577,6 @@ public partial class HomeConductor : ContentPage
 
         var vehiculo = _misVehiculos.FirstOrDefault(v => v.VehiculoId == s.VehiculoId);
 
-        lblTituloViaje.Text = "Viaje en curso";
         lblCliente.Text = $"Cliente: {s.ClienteNombre}";
         lblOrigen.Text = $"Origen: {s.DireccionOrigen}";
         lblDestino.Text = $"Destino: {s.DireccionDestino}";
@@ -382,12 +585,41 @@ public partial class HomeConductor : ContentPage
             : "Vehículo asignado";
         lblPrecio.Text = $"$ {s.Precio:N0}";
 
-        btnAccion.Text = "FINALIZAR VIAJE";
+        // Cada etapa tiene su título y su botón de avance
+        switch (s.Estado)
+        {
+            case "Aceptada":
+                lblTituloViaje.Text = "Dirigite al origen";
+                btnAccion.Text = "LLEGUÉ AL ORIGEN";
+                break;
+            case "EnOrigen":
+                lblTituloViaje.Text = "Carga en el origen";
+                btnAccion.Text = "INICIAR VIAJE";
+                break;
+            case "EnCurso":
+                lblTituloViaje.Text = "Viaje en curso";
+                btnAccion.Text = "LLEGUÉ AL DESTINO";
+                break;
+            case "EnDestino":
+                lblTituloViaje.Text = "Descarga en el destino";
+                btnAccion.Text = "FINALIZAR VIAJE";
+                break;
+            default:
+                lblTituloViaje.Text = "Viaje";
+                btnAccion.Text = "ACTUALIZAR";
+                break;
+        }
+
+        btnChatConductor.IsVisible = true;
+        ActualizarContador();
+
         try
         {
-            _solicitudEnCurso = s;
             RenderSolicitudOnMap(s);
-            StartUbicacionUpdates(s.SolicitudFleteId);
+
+            // El envío de ubicación no se reinicia en cada cambio de etapa
+            if (_ubicacionCts == null)
+                StartUbicacionUpdates(s.SolicitudFleteId);
         }
         catch (Exception ex)
         {
@@ -425,8 +657,7 @@ public partial class HomeConductor : ContentPage
 
         if (_misVehiculos.Count == 0)
         {
-            await DisplayAlertAsync("MUEVE", "Todavía no tenés vehículos cargados. Completá tu perfil para poder trabajar.", "Aceptar");
-            btnCompletarPerfil.IsVisible = true;
+            await DisplayAlertAsync("MUEVE", "Todavía no tenés vehículos cargados. Agregá uno en Mis vehículos para poder trabajar.", "Aceptar");
             return;
         }
 
@@ -618,27 +849,29 @@ public partial class HomeConductor : ContentPage
 
     // ===================== ACCIONES =====================
 
-    private async void CompletarPerfil_Clicked(object? sender, EventArgs e)
-    {
-        await Navigation.PushAsync(new CompletarPerfilConductorPage());
-    }
     private async void MisVehiculos_Clicked(object? sender, EventArgs e)
     {
         await Navigation.PushAsync(new MisVehiculosPage());
     }
+
+    private async void CompletarPerfil_Clicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new CompletarPerfilConductorPage());
+    }
+
+    // Botón principal: acepta un viaje pendiente o avanza a la siguiente etapa del viaje en curso
     private async void AceptarViaje_Clicked(object? sender, EventArgs e)
     {
+        btnAccion.IsEnabled = false;
         try
         {
             if (_solicitudEnCurso != null)
             {
-                StopUbicacionUpdates();
-                var resultado = await _transporteService.CompletarSolicitud(_solicitudEnCurso.SolicitudFleteId);
-                await DisplayAlertAsync("MUEVE",
-                    resultado != null ? "Viaje finalizado correctamente." : "No se pudo finalizar el viaje.",
-                    "Aceptar");
+                await AvanzarViajeAsync(_solicitudEnCurso);
+                return;
             }
-            else if (_solicitudPendiente != null && _conductorId.HasValue && _vehiculoActivo != null)
+
+            if (_solicitudPendiente != null && _conductorId.HasValue && _vehiculoActivo != null)
             {
                 var solicitudId = _solicitudPendiente.SolicitudFleteId;
 
@@ -646,7 +879,7 @@ public partial class HomeConductor : ContentPage
                     solicitudId, _conductorId.Value, _vehiculoActivo.VehiculoId);
 
                 await DisplayAlertAsync("MUEVE",
-                    ok ? "Viaje aceptado correctamente." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
+                    ok ? "Viaje aceptado. Dirigite al origen." : "No se pudo aceptar. Puede que otro conductor ya lo haya tomado.",
                     "Aceptar");
 
                 if (ok && _hub != null && _hub.State == HubConnectionState.Connected)
@@ -660,6 +893,9 @@ public partial class HomeConductor : ContentPage
                         System.Diagnostics.Debug.WriteLine($"No se pudo unir al grupo de la solicitud al aceptar: {ex}");
                     }
                 }
+
+                _solicitudPendiente = null;
+                await CargarEstadoAsync();
             }
         }
         catch (Exception ex)
@@ -667,10 +903,61 @@ public partial class HomeConductor : ContentPage
             await DisplayAlertAsync("MUEVE", "No se pudo conectar con el servidor.", "Aceptar");
             System.Diagnostics.Debug.WriteLine($"Error en acción de viaje: {ex}");
         }
+        finally
+        {
+            btnAccion.IsEnabled = true;
+        }
+    }
 
-        _solicitudPendiente = null;
-        _solicitudEnCurso = null;
-        await CargarEstadoAsync();
+    private async Task AvanzarViajeAsync(SolicitudFleteDto viaje)
+    {
+        SolicitudFleteDto? actualizado;
+
+        switch (viaje.Estado)
+        {
+            case "Aceptada":
+                actualizado = await _transporteService.LlegueAlOrigenAsync(viaje.SolicitudFleteId);
+                break;
+
+            case "EnOrigen":
+                actualizado = await _transporteService.IniciarViajeAsync(viaje.SolicitudFleteId);
+                break;
+
+            case "EnCurso":
+                actualizado = await _transporteService.LlegueAlDestinoAsync(viaje.SolicitudFleteId);
+                break;
+
+            case "EnDestino":
+                {
+                    StopUbicacionUpdates();
+                    var completado = await _transporteService.CompletarSolicitud(viaje.SolicitudFleteId);
+
+                    await DisplayAlertAsync("MUEVE",
+                        completado != null ? "Viaje finalizado correctamente." : "No se pudo finalizar el viaje.",
+                        "Aceptar");
+
+                    _solicitudEnCurso = null;
+                    await CargarEstadoAsync();
+                    return;
+                }
+
+            default:
+                return;
+        }
+
+        if (actualizado == null)
+        {
+            // El servidor rechazó el paso (por ejemplo, el cliente canceló): refrescar la pantalla
+            await SincronizarAsync();
+
+            if (_solicitudEnCurso?.SolicitudFleteId == viaje.SolicitudFleteId && _solicitudEnCurso.Estado == viaje.Estado)
+                await DisplayAlertAsync("MUEVE", "No se pudo actualizar el viaje. Revisá tu conexión.", "Aceptar");
+
+            return;
+        }
+
+        AsignarViajeEnCurso(actualizado);
+        MostrarViajeEnCurso(actualizado);
     }
 
     private async void CerrarSesion_Tapped(object? sender, TappedEventArgs e)

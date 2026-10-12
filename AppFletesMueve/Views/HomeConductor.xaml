@@ -118,6 +118,11 @@
                                FontSize="22"
                                FontAttributes="Bold"
                                TextColor="#E65100"/>
+                        <Label x:Name="lblContador"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="#2E7D32"
+                               IsVisible="False"/>
 
                         <Button x:Name="btnAccion"
                                 Text="ACEPTAR VIAJE"
@@ -125,6 +130,15 @@
                                 TextColor="White"
                                 CornerRadius="12"
                                 Clicked="AceptarViaje_Clicked"/>
+                        <Button x:Name="btnChatConductor"
+                                Text="Chat con el cliente"
+                                BackgroundColor="White"
+                                TextColor="#E65100"
+                                BorderColor="#E65100"
+                                BorderWidth="1"
+                                CornerRadius="12"
+                                IsVisible="False"
+                                Clicked="ChatItem_Clicked"/>
                     </VerticalStackLayout>
 
                     <Label x:Name="lblSinViajes"
