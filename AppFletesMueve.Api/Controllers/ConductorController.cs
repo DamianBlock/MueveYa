@@ -92,8 +92,7 @@ namespace AppFletesMueve.Api.Controllers
                 return BadRequest(new { mensaje = "El vehículo no pertenece a ese conductor" });
 
             var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
-                s.ConductorId == id &&
-                (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso));
+                s.ConductorId == id && EstadosViaje.Activos.Contains(s.Estado));
             if (tieneViajeActivo)
                 return Conflict(new { mensaje = "Tenés un viaje en curso" });
 
@@ -121,8 +120,7 @@ namespace AppFletesMueve.Api.Controllers
                 return NotFound();
 
             var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
-                s.ConductorId == id &&
-                (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso));
+                s.ConductorId == id && EstadosViaje.Activos.Contains(s.Estado));
             if (tieneViajeActivo)
                 return Conflict(new { mensaje = "Finalizá tu viaje antes de detener las solicitudes" });
 

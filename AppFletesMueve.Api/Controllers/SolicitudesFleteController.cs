@@ -38,9 +38,7 @@ namespace AppFletesMueve.Api.Controllers
             // Un cliente solo puede tener un viaje activo a la vez
             var yaTieneViaje = await _context.SolicitudesFlete.AnyAsync(s =>
                 s.ClienteId == dto.ClienteId &&
-                (s.Estado == EstadoSolicitud.Pendiente ||
-                 s.Estado == EstadoSolicitud.Aceptada ||
-                 s.Estado == EstadoSolicitud.EnCurso));
+                (s.Estado == EstadoSolicitud.Pendiente || EstadosViaje.Activos.Contains(s.Estado)));
             if (yaTieneViaje)
                 return Conflict(new { mensaje = "Ya tenés un viaje en curso. Cancelalo o esperá a que termine para pedir otro." });
 
@@ -168,15 +166,13 @@ namespace AppFletesMueve.Api.Controllers
             return Ok(resultado);
         }
 
-        // Viaje activo del cliente (pendiente, aceptado o en curso)
+        // Viaje activo del cliente (pendiente o ya aceptado y sin terminar)
         [HttpGet("cliente/{clienteId:int}/activa")]
         public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorCliente(int clienteId)
         {
             var id = await _context.SolicitudesFlete
                 .Where(s => s.ClienteId == clienteId &&
-                    (s.Estado == EstadoSolicitud.Pendiente ||
-                     s.Estado == EstadoSolicitud.Aceptada ||
-                     s.Estado == EstadoSolicitud.EnCurso))
+                    (s.Estado == EstadoSolicitud.Pendiente || EstadosViaje.Activos.Contains(s.Estado)))
                 .OrderByDescending(s => s.FechaSolicitud)
                 .Select(s => s.SolicitudFleteId)
                 .FirstOrDefaultAsync();
@@ -245,6 +241,26 @@ namespace AppFletesMueve.Api.Controllers
             return Ok(resultadoDto);
         }
 
+        // ===================== ETAPAS DEL VIAJE =====================
+
+        // Aceptada -> EnOrigen: el conductor llegó a donde está la carga (empieza la espera de carga)
+        [HttpPut("{id:int}/llegue-origen")]
+        public Task<ActionResult<SolicitudFleteDto>> LlegueOrigen(int id) =>
+            AvanzarEtapa(id, EstadoSolicitud.Aceptada, EstadoSolicitud.EnOrigen,
+                s => s.LlegadaOrigenUtc = DateTime.UtcNow);
+
+        // EnOrigen -> EnCurso: terminó la carga y sale hacia el destino
+        [HttpPut("{id:int}/iniciar")]
+        public Task<ActionResult<SolicitudFleteDto>> IniciarViaje(int id) =>
+            AvanzarEtapa(id, EstadoSolicitud.EnOrigen, EstadoSolicitud.EnCurso,
+                s => s.InicioViajeUtc = DateTime.UtcNow);
+
+        // EnCurso -> EnDestino: llegó al destino (empieza la espera de descarga)
+        [HttpPut("{id:int}/llegue-destino")]
+        public Task<ActionResult<SolicitudFleteDto>> LlegueDestino(int id) =>
+            AvanzarEtapa(id, EstadoSolicitud.EnCurso, EstadoSolicitud.EnDestino,
+                s => s.LlegadaDestinoUtc = DateTime.UtcNow);
+
         [HttpPut("{id:int}/cancelar")]
         public async Task<ActionResult<SolicitudFleteDto>> Cancelar(int id)
         {
@@ -254,6 +270,10 @@ namespace AppFletesMueve.Api.Controllers
 
             if (solicitud.Estado is EstadoSolicitud.Completada or EstadoSolicitud.Cancelada)
                 return Conflict(new { mensaje = "La solicitud ya está cerrada" });
+
+            // Con la carga ya en el vehículo, el viaje no se puede cancelar
+            if (solicitud.Estado is EstadoSolicitud.EnCurso or EstadoSolicitud.EnDestino)
+                return Conflict(new { mensaje = "El viaje ya está en marcha y no se puede cancelar" });
 
             if (solicitud.VehiculoId.HasValue)
             {
@@ -285,8 +305,7 @@ namespace AppFletesMueve.Api.Controllers
         public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorConductor(int conductorId)
         {
             var id = await _context.SolicitudesFlete
-                .Where(s => s.ConductorId == conductorId &&
-                    (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso))
+                .Where(s => s.ConductorId == conductorId && EstadosViaje.Activos.Contains(s.Estado))
                 .OrderByDescending(s => s.FechaSolicitud)
                 .Select(s => s.SolicitudFleteId)
                 .FirstOrDefaultAsync();
@@ -297,6 +316,7 @@ namespace AppFletesMueve.Api.Controllers
             return dto is null ? NotFound() : Ok(dto);
         }
 
+        // EnDestino -> Completada: terminó la descarga
         [HttpPut("{id:int}/completar")]
         public async Task<ActionResult<SolicitudFleteDto>> Completar(int id)
         {
@@ -304,8 +324,8 @@ namespace AppFletesMueve.Api.Controllers
             if (solicitud is null)
                 return NotFound();
 
-            if (solicitud.Estado != EstadoSolicitud.Aceptada && solicitud.Estado != EstadoSolicitud.EnCurso)
-                return Conflict(new { mensaje = "La solicitud no está en curso" });
+            if (solicitud.Estado != EstadoSolicitud.EnDestino)
+                return Conflict(new { mensaje = "Todavía no llegaste al destino" });
 
             if (solicitud.VehiculoId.HasValue)
             {
@@ -314,6 +334,7 @@ namespace AppFletesMueve.Api.Controllers
             }
 
             solicitud.Estado = EstadoSolicitud.Completada;
+            solicitud.FinalizadoUtc = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             var resultadoDto = await ObtenerDto(id);
@@ -324,6 +345,33 @@ namespace AppFletesMueve.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "No se pudo notificar la finalización de la solicitud {SolicitudId}", id);
+            }
+
+            return Ok(resultadoDto);
+        }
+
+        private async Task<ActionResult<SolicitudFleteDto>> AvanzarEtapa(
+            int id, EstadoSolicitud desde, EstadoSolicitud hacia, Action<SolicitudFlete> marcar)
+        {
+            var solicitud = await _context.SolicitudesFlete.FindAsync(id);
+            if (solicitud is null)
+                return NotFound();
+
+            if (solicitud.Estado != desde)
+                return Conflict(new { mensaje = "El viaje no está en la etapa esperada. Actualizá la pantalla." });
+
+            solicitud.Estado = hacia;
+            marcar(solicitud);
+            await _context.SaveChangesAsync();
+
+            var resultadoDto = await ObtenerDto(id);
+            try
+            {
+                await _hub.Clients.Group($"solicitud-{id}").SendAsync("EtapaActualizada", resultadoDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo notificar la etapa de la solicitud {SolicitudId}", id);
             }
 
             return Ok(resultadoDto);
@@ -365,6 +413,12 @@ namespace AppFletesMueve.Api.Controllers
                 Precio = s.Precio,
                 Estado = s.Estado,
                 TipoVehiculo = s.TipoVehiculo,
+                LlegadaOrigenUtc = s.LlegadaOrigenUtc,
+                InicioViajeUtc = s.InicioViajeUtc,
+                LlegadaDestinoUtc = s.LlegadaDestinoUtc,
+                AhoraUtc = DateTime.UtcNow,
+                MinutosEsperaCarga = _tarifas.MinutosEsperaCarga,
+                MinutosEsperaDescarga = _tarifas.MinutosEsperaDescarga,
                 Cargas = s.Cargas.Select(c => new CargaDto
                 {
                     TipoCargaId = c.TipoCargaId,

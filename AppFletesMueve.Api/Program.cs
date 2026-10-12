@@ -3,6 +3,7 @@ using AppFletesMueve.Api.Models;
 using AppFletesMueve.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,12 @@ builder.Services.AddDbContext<MueveDbContext>(options =>
            .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddOpenApi();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        // Enviar los enums como texto, igual que la API REST ("Pendiente", "Aceptada"...)
+        options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddScoped<ICalculadoraTarifas, CalculadoraTarifas>();      
 

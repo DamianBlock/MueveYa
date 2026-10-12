@@ -22,6 +22,8 @@ namespace AppFletesMueve.Api.Models
         Aceptada,
         EnCurso,
         Completada,
-        Cancelada
+        Cancelada,
+        EnOrigen,
+        EnDestino
     }
 }

@@ -42,5 +42,10 @@ namespace AppFletesMueve.Api.Models
         public EstadoSolicitud Estado { get; set; } = EstadoSolicitud.Pendiente;
 
         public ICollection<SolicitudCarga> Cargas { get; set; } = new List<SolicitudCarga>();
+
+        public DateTime? LlegadaOrigenUtc { get; set; }
+        public DateTime? InicioViajeUtc { get; set; }
+        public DateTime? LlegadaDestinoUtc { get; set; }
+        public DateTime? FinalizadoUtc { get; set; }
     }
 }

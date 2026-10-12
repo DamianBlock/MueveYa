@@ -176,6 +176,12 @@ namespace AppFletesMueve.Api.Dtos
         public EstadoSolicitud Estado { get; set; }
         public List<CargaDto> Cargas { get; set; } = new();
         public TipoVehiculo TipoVehiculo { get; set; }
+        public DateTime? LlegadaOrigenUtc { get; set; }
+        public DateTime? InicioViajeUtc { get; set; }
+        public DateTime? LlegadaDestinoUtc { get; set; }
+        public DateTime AhoraUtc { get; set; }
+        public int MinutosEsperaCarga { get; set; }
+        public int MinutosEsperaDescarga { get; set; }
     }
 
     public class CotizarTarifaDto

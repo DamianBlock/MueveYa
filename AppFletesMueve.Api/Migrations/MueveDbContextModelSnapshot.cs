@@ -161,11 +161,23 @@ namespace AppFletesMueve.Api.Migrations
                     b.Property<DateTime>("FechaSolicitud")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("FinalizadoUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("InicioViajeUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<double>("LatitudDestino")
                         .HasColumnType("double precision");
 
                     b.Property<double>("LatitudOrigen")
                         .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("LlegadaDestinoUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LlegadaOrigenUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<double>("LongitudDestino")
                         .HasColumnType("double precision");

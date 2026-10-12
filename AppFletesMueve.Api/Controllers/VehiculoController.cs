@@ -120,8 +120,7 @@ namespace AppFletesMueve.Api.Controllers
                 return NotFound();
 
             var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
-                s.VehiculoId == id &&
-                (s.Estado == EstadoSolicitud.Aceptada || s.Estado == EstadoSolicitud.EnCurso));
+                s.VehiculoId == id && EstadosViaje.Activos.Contains(s.Estado));
             if (tieneViajeActivo)
                 return Conflict(new { mensaje = "El vehículo tiene un viaje en curso" });
 
