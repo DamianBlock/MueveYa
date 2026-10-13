@@ -78,10 +78,9 @@ public partial class ViajeClientePage : ContentPage
                     MainThread.BeginInvokeOnMainThread(() => MoverConductor(lat, lon));
                 });
 
-                _hub.On<int>("UnreadCountUpdated", count =>
+                _hub.On<int>("UnreadCountUpdated", _ =>
                 {
-                    MainThread.BeginInvokeOnMainThread(() =>
-                        btnChat.Text = count > 0 ? $"Chat con el conductor ({count})" : "Chat con el conductor");
+                    MainThread.BeginInvokeOnMainThread(async () => await ActualizarBadgeChatAsync());
                 });
 
                 _hub.Reconnected += async (string? _) => await UnirseGrupoAsync();
@@ -99,7 +98,25 @@ public partial class ViajeClientePage : ContentPage
             System.Diagnostics.Debug.WriteLine($"Error SignalR (viaje cliente): {ex}");
         }
     }
+    private async Task ActualizarBadgeChatAsync()
+    {
+        if (!btnChat.IsVisible)
+            return;
 
+        var usuario = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Cliente");
+        var sinLeer = await _transporteService.ObtenerMensajesNoLeidosAsync(_solicitudId, usuario);
+
+        if (sinLeer > 0)
+        {
+            btnChat.Text = $"Chat con el conductor ({sinLeer})";
+            btnChat.BackgroundColor = Color.FromArgb("#C62828");
+        }
+        else
+        {
+            btnChat.Text = "Chat con el conductor";
+            btnChat.BackgroundColor = Color.FromArgb("#E65100");
+        }
+    }
     private async Task UnirseGrupoAsync()
     {
         if (_hub == null || _hub.State != HubConnectionState.Connected)
@@ -198,6 +215,8 @@ public partial class ViajeClientePage : ContentPage
         _cronometro = null;
     }
 
+    private static string FormatoTiempo(TimeSpan t) => $"{(int)t.TotalMinutes:00}:{t.Seconds:00}";
+
     private void ActualizarContador()
     {
         var s = _solicitud;
@@ -212,27 +231,39 @@ public partial class ViajeClientePage : ContentPage
         if (s == null || desde == null)
         {
             lblContador.IsVisible = false;
+            barraContador.IsVisible = false;
             return;
         }
 
-        var minutos = s.Estado == "EnOrigen" ? s.MinutosEsperaCarga : s.MinutosEsperaDescarga;
+        var incluidos = TimeSpan.FromMinutes(s.Estado == "EnOrigen" ? s.MinutosEsperaCarga : s.MinutosEsperaDescarga);
         var etiqueta = s.Estado == "EnOrigen" ? "Tiempo de carga" : "Tiempo de descarga";
 
-        var ahoraServidor = DateTime.UtcNow + _desfaseServidor;
-        var restante = TimeSpan.FromMinutes(minutos) - (ahoraServidor - desde.Value);
+        var transcurrido = DateTime.UtcNow + _desfaseServidor - desde.Value;
+        if (transcurrido < TimeSpan.Zero)
+            transcurrido = TimeSpan.Zero;
 
         lblContador.IsVisible = true;
+        barraContador.IsVisible = true;
 
-        if (restante >= TimeSpan.Zero)
+        if (transcurrido <= incluidos)
         {
-            lblContador.Text = $"{etiqueta} incluido: {(int)restante.TotalMinutes:00}:{restante.Seconds:00}";
-            lblContador.TextColor = Color.FromArgb("#2E7D32");
+            var progreso = incluidos.TotalSeconds > 0 ? transcurrido.TotalSeconds / incluidos.TotalSeconds : 1;
+            var color = progreso >= 0.8 ? Color.FromArgb("#E65100") : Color.FromArgb("#2E7D32");
+
+            lblContador.Text = $"{etiqueta}: {FormatoTiempo(transcurrido)} de {FormatoTiempo(incluidos)}";
+            lblContador.TextColor = color;
+            barraContador.Progress = progreso;
+            barraContador.ProgressColor = color;
         }
         else
         {
-            var extra = -restante;
-            lblContador.Text = $"{etiqueta}: tiempo extra +{(int)extra.TotalMinutes:00}:{extra.Seconds:00}";
-            lblContador.TextColor = Color.FromArgb("#C62828");
+            var extra = transcurrido - incluidos;
+            var rojo = Color.FromArgb("#C62828");
+
+            lblContador.Text = $"{etiqueta} extra: +{FormatoTiempo(extra)} ({(int)Math.Ceiling(extra.TotalMinutes)} min)";
+            lblContador.TextColor = rojo;
+            barraContador.Progress = 1;
+            barraContador.ProgressColor = rojo;
         }
     }
 
@@ -250,6 +281,7 @@ public partial class ViajeClientePage : ContentPage
         _desfaseServidor = solicitud.AhoraUtc == default ? TimeSpan.Zero : solicitud.AhoraUtc - DateTime.UtcNow;
 
         AplicarEstado(solicitud);
+        await ActualizarBadgeChatAsync();
     }
 
     private void AplicarEstado(SolicitudFleteDto s)

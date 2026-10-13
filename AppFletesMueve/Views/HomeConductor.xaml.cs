@@ -124,14 +124,9 @@ public partial class HomeConductor : ContentPage
                 });
 
                 // Escuchar actualizaciones de conteo de mensajes no leídos via SignalR
-                _hub.On<int>("UnreadCountUpdated", count =>
+                _hub.On<int>("UnreadCountUpdated", _ =>
                 {
-                    MainThread.BeginInvokeOnMainThread(() =>
-                    {
-                        btnChatConductor.Text = count > 0 ? $"Chat con el cliente ({count})" : "Chat con el cliente";
-                        if (_chatToolbarItem != null)
-                            _chatToolbarItem.Text = count > 0 ? $"Chat ({count})" : "Chat";
-                    });
+                    MainThread.BeginInvokeOnMainThread(async () => await ActualizarBadgeChatAsync());
                 });
 
                 // Volver a unirse a los grupos si la conexión se restablece
@@ -156,7 +151,30 @@ public partial class HomeConductor : ContentPage
             System.Diagnostics.Debug.WriteLine($"Error SignalR: {ex}");
         }
     }
+    private async Task ActualizarBadgeChatAsync()
+    {
+        var viaje = _solicitudEnCurso;
+        if (viaje == null || !btnChatConductor.IsVisible)
+            return;
 
+        var usuario = Preferences.Get("Nombre", SesionUsuario.Nombre ?? "Conductor");
+        var sinLeer = await _transporteService.ObtenerMensajesNoLeidosAsync(viaje.SolicitudFleteId, usuario);
+
+        if (sinLeer > 0)
+        {
+            btnChatConductor.Text = $"Chat con el cliente ({sinLeer})";
+            btnChatConductor.BackgroundColor = Color.FromArgb("#C62828");
+            btnChatConductor.TextColor = Colors.White;
+            btnChatConductor.BorderColor = Color.FromArgb("#C62828");
+        }
+        else
+        {
+            btnChatConductor.Text = "Chat con el cliente";
+            btnChatConductor.BackgroundColor = Colors.White;
+            btnChatConductor.TextColor = Color.FromArgb("#E65100");
+            btnChatConductor.BorderColor = Color.FromArgb("#E65100");
+        }
+    }
     protected override async void OnDisappearing()
     {
         base.OnDisappearing();
@@ -355,7 +373,7 @@ public partial class HomeConductor : ContentPage
                     AsignarViajeEnCurso(actual);
                     MostrarViajeEnCurso(actual);
                 }
-
+                await ActualizarBadgeChatAsync();
                 return;
             }
 
@@ -410,6 +428,8 @@ public partial class HomeConductor : ContentPage
         _desfaseServidor = s.AhoraUtc == default ? TimeSpan.Zero : s.AhoraUtc - DateTime.UtcNow;
     }
 
+    private static string FormatoTiempo(TimeSpan t) => $"{(int)t.TotalMinutes:00}:{t.Seconds:00}";
+
     private void ActualizarContador()
     {
         var s = _solicitudEnCurso;
@@ -424,27 +444,39 @@ public partial class HomeConductor : ContentPage
         if (s == null || desde == null)
         {
             lblContador.IsVisible = false;
+            barraContador.IsVisible = false;
             return;
         }
 
-        var minutos = s.Estado == "EnOrigen" ? s.MinutosEsperaCarga : s.MinutosEsperaDescarga;
-        var etiqueta = s.Estado == "EnOrigen" ? "Espera de carga" : "Espera de descarga";
+        var incluidos = TimeSpan.FromMinutes(s.Estado == "EnOrigen" ? s.MinutosEsperaCarga : s.MinutosEsperaDescarga);
+        var etiqueta = s.Estado == "EnOrigen" ? "Tiempo de carga" : "Tiempo de descarga";
 
-        var ahoraServidor = DateTime.UtcNow + _desfaseServidor;
-        var restante = TimeSpan.FromMinutes(minutos) - (ahoraServidor - desde.Value);
+        var transcurrido = DateTime.UtcNow + _desfaseServidor - desde.Value;
+        if (transcurrido < TimeSpan.Zero)
+            transcurrido = TimeSpan.Zero;
 
         lblContador.IsVisible = true;
+        barraContador.IsVisible = true;
 
-        if (restante >= TimeSpan.Zero)
+        if (transcurrido <= incluidos)
         {
-            lblContador.Text = $"{etiqueta}: {(int)restante.TotalMinutes:00}:{restante.Seconds:00} incluidos";
-            lblContador.TextColor = Color.FromArgb("#2E7D32");
+            var progreso = incluidos.TotalSeconds > 0 ? transcurrido.TotalSeconds / incluidos.TotalSeconds : 1;
+            var color = progreso >= 0.8 ? Color.FromArgb("#E65100") : Color.FromArgb("#2E7D32");
+
+            lblContador.Text = $"{etiqueta}: {FormatoTiempo(transcurrido)} de {FormatoTiempo(incluidos)}";
+            lblContador.TextColor = color;
+            barraContador.Progress = progreso;
+            barraContador.ProgressColor = color;
         }
         else
         {
-            var extra = -restante;
-            lblContador.Text = $"{etiqueta}: tiempo extra +{(int)extra.TotalMinutes:00}:{extra.Seconds:00}";
-            lblContador.TextColor = Color.FromArgb("#C62828");
+            var extra = transcurrido - incluidos;
+            var rojo = Color.FromArgb("#C62828");
+
+            lblContador.Text = $"{etiqueta} extra: +{FormatoTiempo(extra)} ({(int)Math.Ceiling(extra.TotalMinutes)} min)";
+            lblContador.TextColor = rojo;
+            barraContador.Progress = 1;
+            barraContador.ProgressColor = rojo;
         }
     }
 
@@ -627,6 +659,7 @@ public partial class HomeConductor : ContentPage
         {
             System.Diagnostics.Debug.WriteLine($"Error iniciando viaje en curso: {ex}");
         }
+        _ = ActualizarBadgeChatAsync();
     }
 
     // ===================== INICIAR / DETENER SERVICIO =====================
@@ -956,7 +989,7 @@ public partial class HomeConductor : ContentPage
                 await DisplayAlertAsync("MUEVE", "No se pudo actualizar el viaje. Revisá tu conexión.", "Aceptar");
 
             return;
-        }
+        }        
 
         AsignarViajeEnCurso(actualizado);
         MostrarViajeEnCurso(actualizado);

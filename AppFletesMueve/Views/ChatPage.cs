@@ -187,6 +187,13 @@ namespace AppFletesMueve.Views
             base.OnDisappearing();
             try
             {
+                // Marcar como leídos los mensajes que llegaron mientras el chat estaba abierto
+                if (_groupName.StartsWith("solicitud-") &&
+                    int.TryParse(_groupName.Substring("solicitud-".Length), out var sid))
+                {
+                    await MarkReadBySolicitudAsync(sid, DateTime.UtcNow, _userName);
+                }
+
                 if (_hub.State == HubConnectionState.Connected) await _hub.SendAsync("LeaveGroup", _groupName);
                 _hub.Remove("ReceiveMessage");
             }

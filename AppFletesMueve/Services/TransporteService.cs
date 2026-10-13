@@ -206,7 +206,17 @@ namespace AppFletesMueve.Services
             }
             catch { return null; }
         }
-
+        public async Task<int> ObtenerMensajesNoLeidosAsync(int solicitudId, string usuario)
+        {
+            try
+            {
+                var url = ApiUrl + $"Chat/unread-count/{solicitudId}?forUser={Uri.EscapeDataString(usuario)}";
+                var json = await _httpClient.GetStringAsync(url);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                return doc.RootElement.GetProperty("count").GetInt32();
+            }
+            catch { return 0; }
+        }
         public async Task<SolicitudFleteDto?> CrearSolicitud(CrearSolicitudFleteRequest request)
         {
             try
