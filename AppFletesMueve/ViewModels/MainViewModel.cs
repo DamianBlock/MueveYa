@@ -1,9 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using AppFletesMueve.Models;
+using AppFletesMueve.Services;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using AppFletesMueve.Models;
-using AppFletesMueve.Services;
+
 
 namespace AppFletesMueve.ViewModels
 {

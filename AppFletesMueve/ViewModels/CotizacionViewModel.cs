@@ -1,6 +1,7 @@
-﻿using System.Collections.ObjectModel;
-using AppFletesMueve.Models;
+﻿using AppFletesMueve.Models;
 using AppFletesMueve.Services;
+using System.Collections.ObjectModel;
+
 
 namespace AppFletesMueve.ViewModels
 {

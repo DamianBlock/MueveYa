@@ -291,7 +291,7 @@ public partial class ViajeClientePage : ContentPage
                 lblEstado.TextColor = Color.FromArgb("#2E7D32");
                 lblDetalle.Text = "Van camino al destino. Podés seguir el recorrido en el mapa.";
                 MostrarConductor(s);
-                ConfigurarBotones(chat: true, textoCancelar: null, volver: false);
+                ConfigurarBotones(chat: true, textoCancelar: "Cancelar viaje", volver: false);
                 break;
 
             case "EnDestino":
@@ -299,7 +299,7 @@ public partial class ViajeClientePage : ContentPage
                 lblEstado.TextColor = Color.FromArgb("#2E7D32");
                 lblDetalle.Text = "Es el momento de descargar. El viaje termina cuando el conductor lo finaliza.";
                 MostrarConductor(s);
-                ConfigurarBotones(chat: true, textoCancelar: null, volver: false);
+                ConfigurarBotones(chat: true, textoCancelar: "Cancelar viaje", volver: false);
                 break;
 
             case "Completada":
@@ -314,7 +314,9 @@ public partial class ViajeClientePage : ContentPage
             case "Cancelada":
                 lblEstado.Text = "Viaje cancelado";
                 lblEstado.TextColor = Color.FromArgb("#C62828");
-                lblDetalle.Text = "Podés pedir un nuevo flete cuando quieras.";
+                lblDetalle.Text = s.CanceladaPor == "Conductor"
+                    ? $"Tu conductor canceló el viaje. Motivo: {s.MotivoCancelacion}. Podés pedir un nuevo flete cuando quieras."
+                    : "Cancelaste el viaje. Podés pedir un nuevo flete cuando quieras.";
                 panelConductor.IsVisible = false;
                 ConfigurarBotones(chat: false, textoCancelar: null, volver: true);
                 DetenerPolling();
@@ -405,17 +407,17 @@ public partial class ViajeClientePage : ContentPage
 
     private async void Cancelar_Clicked(object? sender, EventArgs e)
     {
-        bool confirmar = await DisplayAlertAsync("MUEVE", "¿Querés cancelar este viaje?", "Sí, cancelar", "No");
+        var motivo = await DisplayActionSheetAsync("¿Por qué querés cancelar?", "Volver", null, MotivosCancelacion.Cliente);
+        if (string.IsNullOrEmpty(motivo) || motivo == "Volver")
+            return;
+
+        bool confirmar = await DisplayAlertAsync("MUEVE", $"¿Cancelar el viaje?\nMotivo: {motivo}", "Sí, cancelar", "No");
         if (!confirmar)
             return;
 
-        var ok = await _transporteService.CancelarSolicitudAsync(_solicitudId);
+        var (ok, mensaje) = await _transporteService.CancelarViajeAsync(_solicitudId, "Cliente", motivo);
         if (!ok)
-        {
-            await DisplayAlertAsync("MUEVE", "No se pudo cancelar. Si el viaje ya está en marcha, no se puede cancelar.", "Aceptar");
-            await RecargarAsync();
-            return;
-        }
+            await DisplayAlertAsync("MUEVE", mensaje ?? "No se pudo cancelar. Probá de nuevo.", "Aceptar");
 
         await RecargarAsync();
     }

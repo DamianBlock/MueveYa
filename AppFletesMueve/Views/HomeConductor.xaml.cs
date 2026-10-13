@@ -253,10 +253,10 @@ public partial class HomeConductor : ContentPage
     {
         if (_solicitudEnCurso?.SolicitudFleteId != s.SolicitudFleteId)
             return;
-
+        if (s.CanceladaPor == "Conductor") return;
         StopUbicacionUpdates();
         _solicitudEnCurso = null;
-        await DisplayAlertAsync("MUEVE", "El cliente canceló el viaje.", "Aceptar");
+        await DisplayAlertAsync("MUEVE", TextoCancelacion(s), "Aceptar");
         await CargarEstadoAsync();
     }
 
@@ -343,7 +343,7 @@ public partial class HomeConductor : ContentPage
                     _solicitudEnCurso = null;
 
                     await DisplayAlertAsync("MUEVE",
-                        actual.Estado == "Cancelada" ? "El cliente canceló el viaje." : "El viaje ya fue finalizado.",
+                        actual.Estado == "Cancelada" ? TextoCancelacion(actual) : "El viaje ya fue finalizado.",
                         "Aceptar");
 
                     await CargarEstadoAsync();
@@ -545,6 +545,7 @@ public partial class HomeConductor : ContentPage
     private void MostrarViajePendiente(SolicitudFleteDto s)
     {
         btnCompletarPerfil.IsVisible = false;
+        btnCancelarViaje.IsVisible = false;
         lblSinViajes.IsVisible = false;
         contenedorViaje.IsVisible = true;
 
@@ -572,6 +573,7 @@ public partial class HomeConductor : ContentPage
     private void MostrarViajeEnCurso(SolicitudFleteDto s)
     {
         btnCompletarPerfil.IsVisible = false;
+        btnCancelarViaje.IsVisible = true;
         lblSinViajes.IsVisible = false;
         contenedorViaje.IsVisible = true;
 
@@ -959,7 +961,40 @@ public partial class HomeConductor : ContentPage
         AsignarViajeEnCurso(actualizado);
         MostrarViajeEnCurso(actualizado);
     }
+    private async void CancelarViaje_Clicked(object? sender, EventArgs e)
+    {
+        var viaje = _solicitudEnCurso;
+        if (viaje == null)
+            return;
 
+        var motivo = await DisplayActionSheetAsync("¿Por qué cancelás el viaje?", "Volver", null, MotivosCancelacion.Conductor);
+        if (string.IsNullOrEmpty(motivo) || motivo == "Volver")
+            return;
+
+        bool confirmar = await DisplayAlertAsync("MUEVE", $"¿Cancelar el viaje?\nMotivo: {motivo}", "Sí, cancelar", "No");
+        if (!confirmar)
+            return;
+
+        var (ok, mensaje) = await _transporteService.CancelarViajeAsync(viaje.SolicitudFleteId, "Conductor", motivo);
+        if (!ok)
+        {
+            await DisplayAlertAsync("MUEVE", mensaje ?? "No se pudo cancelar. Probá de nuevo.", "Aceptar");
+            return;
+        }
+
+        StopUbicacionUpdates();
+        _solicitudEnCurso = null;
+        await CargarEstadoAsync();
+    }
+
+    private static string TextoCancelacion(SolicitudFleteDto s)
+    {
+        if (s.CanceladaPor == "Conductor")
+            return "El viaje fue cancelado desde tu cuenta.";
+
+        var motivo = string.IsNullOrWhiteSpace(s.MotivoCancelacion) ? string.Empty : $" Motivo: {s.MotivoCancelacion}";
+        return $"El cliente canceló el viaje.{motivo}";
+    }
     private async void CerrarSesion_Tapped(object? sender, TappedEventArgs e)
     {
         if (_solicitudEnCurso != null)

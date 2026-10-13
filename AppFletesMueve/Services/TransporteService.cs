@@ -61,6 +61,8 @@ namespace AppFletesMueve.Services
         public DateTime AhoraUtc { get; set; }
         public int MinutosEsperaCarga { get; set; }
         public int MinutosEsperaDescarga { get; set; }
+        public string? CanceladaPor { get; set; }
+        public string? MotivoCancelacion { get; set; }
     }
 
     public class TipoCargaDto { public int TipoCargaId { get; set; } public string Nombre { get; set; } = string.Empty; public double PesoEstimadoKg { get; set; } public double VolumenEstimadoM3 { get; set; } }
@@ -286,15 +288,26 @@ namespace AppFletesMueve.Services
             catch { return null; }
         }
 
-        public async Task<bool> CancelarSolicitudAsync(int solicitudId)
+        public async Task<(bool Ok, string? Mensaje)> CancelarViajeAsync(int solicitudId, string canceladoPor, string motivo)
         {
             try
             {
-                var response = await _httpClient.PutAsync(ApiUrl + $"SolicitudesFlete/{solicitudId}/cancelar", null);
-                return response.IsSuccessStatusCode;
+                var response = await _httpClient.PutAsJsonAsync(
+                    ApiUrl + $"SolicitudesFlete/{solicitudId}/cancelar",
+                    new { CanceladoPor = canceladoPor, Motivo = motivo });
+
+                if (response.IsSuccessStatusCode)
+                    return (true, null);
+
+                return (false, await LeerMensajeAsync(response));
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al cancelar: {ex}");
+                return (false, "No se pudo conectar con el servidor.");
+            }
         }
+
         public static double HaversineDistanceKm(double lat1, double lon1, double lat2, double lon2)
         {
             double R = 6371; // km

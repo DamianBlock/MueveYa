@@ -139,6 +139,15 @@
                                 CornerRadius="12"
                                 IsVisible="False"
                                 Clicked="ChatItem_Clicked"/>
+                        <Button x:Name="btnCancelarViaje"
+                                Text="Cancelar viaje"
+                                BackgroundColor="White"
+                                TextColor="#C62828"
+                                BorderColor="#C62828"
+                                BorderWidth="1"
+                                CornerRadius="12"
+                                IsVisible="False"
+                                Clicked="CancelarViaje_Clicked"/>
                     </VerticalStackLayout>
 
                     <Label x:Name="lblSinViajes"

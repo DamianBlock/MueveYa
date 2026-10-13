@@ -89,7 +89,8 @@
                             TextColor="#000000"
                             Grid.Column="0"
                             BackgroundColor="#FFFFFF"
-                            TextChanged="TxtOrigen_TextChanged"/>
+                            TextChanged="TxtOrigen_TextChanged"
+                            Completed="BuscarOrigen_Clicked"/>
                         <Button
                             Text="Borrar"
                             Grid.Column="1"
@@ -131,7 +132,8 @@
                             TextColor="#000000"
                             Grid.Column="0"
                             BackgroundColor="#FFFFFF"
-                            TextChanged="TxtDestino_TextChanged"/>
+                            TextChanged="TxtDestino_TextChanged"
+                            Completed="BuscarDestino_Clicked"/>
                         <Button
                             Text="Borrar"
                             Grid.Column="1"
