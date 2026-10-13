@@ -262,7 +262,7 @@ namespace AppFletesMueve.Api.Controllers
                 s => s.LlegadaDestinoUtc = DateTime.UtcNow);
 
         [HttpPut("{id:int}/cancelar")]
-        public async Task<ActionResult<SolicitudFleteDto>> Cancelar(int id)
+        public async Task<ActionResult<SolicitudFleteDto>> Cancelar(int id, CancelarSolicitudDto dto)
         {
             var solicitud = await _context.SolicitudesFlete.FindAsync(id);
             if (solicitud is null)
@@ -271,23 +271,29 @@ namespace AppFletesMueve.Api.Controllers
             if (solicitud.Estado is EstadoSolicitud.Completada or EstadoSolicitud.Cancelada)
                 return Conflict(new { mensaje = "La solicitud ya está cerrada" });
 
-            // Con la carga ya en el vehículo, el viaje no se puede cancelar
-            if (solicitud.Estado is EstadoSolicitud.EnCurso or EstadoSolicitud.EnDestino)
-                return Conflict(new { mensaje = "El viaje ya está en marcha y no se puede cancelar" });
+            if (dto.CanceladoPor == QuienCancela.Conductor && solicitud.Estado == EstadoSolicitud.Pendiente)
+                return BadRequest(new { mensaje = "Un conductor solo puede cancelar un viaje que ya aceptó" });
 
+            // El vehículo queda libre (el conductor sigue en servicio si no lo detiene)
             if (solicitud.VehiculoId.HasValue)
             {
                 var vehiculo = await _context.Vehiculos.FindAsync(solicitud.VehiculoId.Value);
                 if (vehiculo is not null) vehiculo.Disponible = true;
             }
 
+            // Registro de la cancelación, para el puntaje a futuro
+            solicitud.CanceladaPor = dto.CanceladoPor.ToString();
+            solicitud.MotivoCancelacion = dto.Motivo.Trim();
+            solicitud.CanceladaEnEtapa = solicitud.Estado.ToString();
+            solicitud.CanceladaUtc = DateTime.UtcNow;
             solicitud.Estado = EstadoSolicitud.Cancelada;
+
             await _context.SaveChangesAsync();
 
             var resultadoDto = await ObtenerDto(id);
             try
             {
-                // Al conductor que ya la había aceptado (y al cliente en otros dispositivos)
+                // Al otro participante del viaje (y a otros dispositivos de la misma cuenta)
                 await _hub.Clients.Group($"solicitud-{id}").SendAsync("SolicitudCancelada", resultadoDto);
 
                 // A los conductores que todavía la ven como pendiente
@@ -401,6 +407,8 @@ namespace AppFletesMueve.Api.Controllers
                 VehiculoDescripcion = s.Vehiculo != null ? $"{s.Vehiculo.Marca} {s.Vehiculo.Modelo}" : null,
                 Patente = s.Vehiculo?.Patente,
                 TipoServicio = s.TipoServicio,
+                CanceladaPor = s.CanceladaPor,
+                MotivoCancelacion = s.MotivoCancelacion,
                 FechaSolicitud = s.FechaSolicitud,
                 FechaProgramada = s.FechaProgramada,
                 DireccionOrigen = s.DireccionOrigen,

@@ -26,4 +26,9 @@ namespace AppFletesMueve.Api.Models
         EnOrigen,
         EnDestino
     }
+    public enum QuienCancela
+    {
+        Cliente,
+        Conductor
+    }
 }

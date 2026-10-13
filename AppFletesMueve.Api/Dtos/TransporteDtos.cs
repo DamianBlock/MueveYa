@@ -182,8 +182,17 @@ namespace AppFletesMueve.Api.Dtos
         public DateTime AhoraUtc { get; set; }
         public int MinutosEsperaCarga { get; set; }
         public int MinutosEsperaDescarga { get; set; }
+        public string? CanceladaPor { get; set; }
+        public string? MotivoCancelacion { get; set; }
     }
+    public class CancelarSolicitudDto
+    {
+        [EnumDataType(typeof(QuienCancela))]
+        public QuienCancela CanceladoPor { get; set; }
 
+        [Required, StringLength(200, MinimumLength = 3)]
+        public string Motivo { get; set; } = string.Empty;
+    }
     public class CotizarTarifaDto
     {
         [EnumDataType(typeof(TipoServicio))]

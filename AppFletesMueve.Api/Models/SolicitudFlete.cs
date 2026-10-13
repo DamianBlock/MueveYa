@@ -47,5 +47,9 @@ namespace AppFletesMueve.Api.Models
         public DateTime? InicioViajeUtc { get; set; }
         public DateTime? LlegadaDestinoUtc { get; set; }
         public DateTime? FinalizadoUtc { get; set; }
+        public string? CanceladaPor { get; set; }
+        public string? MotivoCancelacion { get; set; }
+        public string? CanceladaEnEtapa { get; set; }
+        public DateTime? CanceladaUtc { get; set; }
     }
 }

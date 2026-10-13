@@ -133,6 +133,15 @@ namespace AppFletesMueve.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SolicitudFleteId"));
 
+                    b.Property<string>("CanceladaEnEtapa")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CanceladaPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CanceladaUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("ClienteId")
                         .HasColumnType("integer");
 
@@ -184,6 +193,9 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.Property<double>("LongitudOrigen")
                         .HasColumnType("double precision");
+
+                    b.Property<string>("MotivoCancelacion")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("Precio")
                         .HasPrecision(12, 2)
