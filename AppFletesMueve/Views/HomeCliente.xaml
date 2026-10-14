@@ -3,226 +3,262 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
-             x:Class="AppFletesMueve.Views.HomeCliente"
-             x:Name="PaginaPrincipal"
              xmlns:models="clr-namespace:AppFletesMueve.Models"
              xmlns:vm="clr-namespace:AppFletesMueve.ViewModels"
+             x:Class="AppFletesMueve.Views.HomeCliente"
+             x:Name="PaginaPrincipal"
              BackgroundColor="#F5F5F5"
              NavigationPage.HasNavigationBar="False">
 
-    <Grid>
+    <Grid RowDefinitions="Auto,*">
 
-        <!-- CONTENIDO NORMAL -->
-        <ScrollView>
+        <!-- BARRA SUPERIOR -->
+        <Grid Grid.Row="0" BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="Auto,*,Auto">
 
-            <VerticalStackLayout BackgroundColor="#F5F5F5" Spacing="0">
+            <Label
+                Grid.Column="0"
+                Text="&#9776;"
+                FontSize="26"
+                TextColor="White"
+                VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="AbrirMenu_Tapped"/>
+                </Label.GestureRecognizers>
+            </Label>
 
-                <!-- BARRA SUPERIOR -->
-                <Grid BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="Auto,*,Auto">
+            <Image
+                Grid.Column="1"
+                Source="logo_mueve.png"
+                HeightRequest="40"
+                HorizontalOptions="Center"/>
 
-                    <Label
-                        Grid.Column="0"
-                        Text="&#9776;"
-                        FontSize="26"
-                        TextColor="White"
-                        VerticalOptions="Center">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="AbrirMenu_Tapped"/>
-                        </Label.GestureRecognizers>
-                    </Label>
+            <Label
+                Grid.Column="2"
+                x:Name="lblBienvenida"
+                FontSize="14"
+                FontAttributes="Bold"
+                TextColor="White"
+                VerticalOptions="Center"/>
 
-                    <Image
-                        Grid.Column="1"
-                        Source="logo_mueve.png"
-                        HeightRequest="40"
-                        HorizontalOptions="Center"/>
+        </Grid>
 
-                    <Label
-                        Grid.Column="2"
-                        x:Name="lblBienvenida"
-                        FontSize="14"
-                        FontAttributes="Bold"
-                        TextColor="White"
-                        VerticalOptions="Center"/>
+        <!-- MAPA A PANTALLA COMPLETA (sin ScrollView encima) -->
+        <maps:Map Grid.Row="1" x:Name="mapCliente" IsShowingUser="True"/>
 
-                </Grid>
+        <!-- Pin fijo central: el usuario mueve el mapa por debajo -->
+        <Image
+            Grid.Row="1"
+            x:Name="pinCentral"
+            Source="pin_naranja.svg"
+            HeightRequest="40"
+            WidthRequest="40"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            TranslationY="-20"
+            IsVisible="False"
+            InputTransparent="True"/>
 
-                <!-- MAPA, con pin fijo central para elegir ubicación arrastrando -->
-                <Grid HeightRequest="220" BackgroundColor="#E0E0E0">
+        <!-- PANEL INFERIOR DESLIZABLE -->
+        <Border
+            Grid.Row="0"
+            Grid.RowSpan="2"
+            x:Name="panelPrincipal"
+            VerticalOptions="End"
+            BackgroundColor="White"
+            Stroke="#E0E0E0"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 24,24,0,0"
+            Padding="0">
 
-                    <maps:Map x:Name="mapCliente" HeightRequest="220" IsShowingUser="True" />
+            <VerticalStackLayout Spacing="0">
 
-                    <!-- Pin fijo, decorativo: el usuario mueve el mapa por debajo -->
-                    <Image
-                        x:Name="pinCentral"
-                        Source="pin_naranja.svg"
-                        HeightRequest="40"
-                        WidthRequest="40"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"
-                        IsVisible="False"
-                        InputTransparent="True"/>
+                <!-- Cabecera: deslizar o tocar para colapsar / expandir -->
+                <VerticalStackLayout
+                    HeightRequest="64"
+                    Padding="16,10,16,0"
+                    Spacing="8"
+                    BackgroundColor="White">
+                    <VerticalStackLayout.GestureRecognizers>
+                        <SwipeGestureRecognizer Direction="Down" Swiped="PanelCabecera_Swiped"/>
+                        <SwipeGestureRecognizer Direction="Up" Swiped="PanelCabecera_Swiped"/>
+                        <TapGestureRecognizer Tapped="PanelCabecera_Tapped"/>
+                    </VerticalStackLayout.GestureRecognizers>
 
-                    <Button
-                        x:Name="btnConfirmarUbicacionMapa"
-                        Text="Usar esta ubicación"
-                        BackgroundColor="#E65100"
-                        TextColor="White"
-                        CornerRadius="10"
-                        HeightRequest="40"
-                        HorizontalOptions="Center"
-                        VerticalOptions="End"
-                        Margin="0,0,0,10"
-                        IsVisible="False"
-                        Clicked="ConfirmarUbicacionMapa_Clicked"/>
+                    <BoxView HeightRequest="4"
+                             WidthRequest="40"
+                             CornerRadius="2"
+                             Color="#D0D0D0"
+                             HorizontalOptions="Center"/>
 
-                </Grid>
-
-                <!-- BÚSQUEDA DE ORIGEN Y DESTINO -->
-                <VerticalStackLayout HorizontalOptions="Fill" VerticalOptions="Start" Padding="12" Spacing="6">
-
-                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,6">
-                        <Entry
-                            x:Name="txtOrigen"
-                            Placeholder="Buscar origen..."
-                            PlaceholderColor="#757575"
-                            TextColor="#000000"
-                            Grid.Column="0"
-                            BackgroundColor="#FFFFFF"
-                            TextChanged="TxtOrigen_TextChanged"
-                            Completed="BuscarOrigen_Clicked"/>
-                        <Button
-                            Text="Borrar"
-                            Grid.Column="1"
-                            Clicked="BorrarOrigen_Clicked"
-                            BackgroundColor="#E65100"
-                            TextColor="#FFFFFF"/>
-                        <Button
-                            Text="📍"
-                            Grid.Column="2"
-                            Clicked="ElegirOrigenEnMapa_Clicked"
-                            BackgroundColor="#FFFFFF"
-                            TextColor="#E65100"
-                            BorderColor="#E65100"
-                            BorderWidth="1"
-                            WidthRequest="48"/>
-                    </Grid>
-
-                    <CollectionView
-                        x:Name="listaSugerenciasOrigen"
-                        IsVisible="False"
-                        BackgroundColor="White"
-                        MaximumHeightRequest="140">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Padding="10,8">
-                                    <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="SugerenciaOrigen_Tapped"/>
-                                    </Grid.GestureRecognizers>
-                                </Grid>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-
-                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
-                        <Entry
-                            x:Name="txtDestino"
-                            Placeholder="Buscar destino..."
-                            TextColor="#000000"
-                            Grid.Column="0"
-                            BackgroundColor="#FFFFFF"
-                            TextChanged="TxtDestino_TextChanged"
-                            Completed="BuscarDestino_Clicked"/>
-                        <Button
-                            Text="Borrar"
-                            Grid.Column="1"
-                            Clicked="BorrarDestino_Clicked"
-                            BackgroundColor="#E65100"
-                            TextColor="White"/>
-                        <Button
-                            Text="📍"
-                            Grid.Column="2"
-                            Clicked="ElegirDestinoEnMapa_Clicked"
-                            BackgroundColor="#FFFFFF"
-                            TextColor="#E65100"
-                            BorderColor="#E65100"
-                            BorderWidth="1"
-                            WidthRequest="48"/>
-                    </Grid>
-
-                    <CollectionView
-                        x:Name="listaSugerencias"
-                        IsVisible="False"
-                        BackgroundColor="White"
-                        MaximumHeightRequest="140">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Padding="10,8">
-                                    <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="SugerenciaDestino_Tapped"/>
-                                    </Grid.GestureRecognizers>
-                                </Grid>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-
+                    <Label Text="¿A dónde vamos?"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="Black"
+                           HorizontalOptions="Center"/>
                 </VerticalStackLayout>
 
-                <!-- CONTENIDO -->
-                <VerticalStackLayout Padding="20" Spacing="15">
+                <ScrollView x:Name="scrollPanel" MaximumHeightRequest="380">
+                    <VerticalStackLayout Padding="16,0,16,16" Spacing="10">
 
-                    <Border
-                        StrokeShape="RoundRectangle 10"
-                        StrokeThickness="1"
-                        Stroke="#E0E0E0"
-                        Padding="15"
-                        BackgroundColor="#FAFAFA">
+                        <!-- ORIGEN -->
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <Entry
+                                x:Name="txtOrigen"
+                                Grid.Column="0"
+                                Placeholder="Buscar origen..."
+                                PlaceholderColor="#757575"
+                                TextColor="#000000"
+                                BackgroundColor="#F5F5F5"
+                                TextChanged="TxtOrigen_TextChanged"
+                                Completed="BuscarOrigen_Clicked"/>
+                            <Button
+                                Grid.Column="1"
+                                Text="Borrar"
+                                Clicked="BorrarOrigen_Clicked"
+                                BackgroundColor="#E65100"
+                                TextColor="#FFFFFF"/>
+                            <Button
+                                Grid.Column="2"
+                                Text="📍"
+                                Clicked="ElegirOrigenEnMapa_Clicked"
+                                BackgroundColor="#FFFFFF"
+                                TextColor="#E65100"
+                                BorderColor="#E65100"
+                                BorderWidth="1"
+                                WidthRequest="48"/>
+                        </Grid>
 
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="Origen" TextColor="Gray" FontSize="12"/>
-                            <Label x:Name="lblOrigenResumen" Text="" FontAttributes="Bold" TextColor="Black"/>
-                            <Label Text="Destino" TextColor="Gray" FontSize="12"/>
-                            <Label x:Name="lblDestinoResumen" Text="" FontAttributes="Bold" TextColor="Black"/>
-                        </VerticalStackLayout>
-                    </Border>
+                        <CollectionView
+                            x:Name="listaSugerenciasOrigen"
+                            IsVisible="False"
+                            BackgroundColor="White"
+                            MaximumHeightRequest="140">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="10,8">
+                                        <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="SugerenciaOrigen_Tapped"/>
+                                        </Grid.GestureRecognizers>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
 
-                    <Label Text="¿Qué vas a trasladar?" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
+                        <!-- DESTINO -->
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <Entry
+                                x:Name="txtDestino"
+                                Grid.Column="0"
+                                Placeholder="Buscar destino..."
+                                PlaceholderColor="#757575"
+                                TextColor="#000000"
+                                BackgroundColor="#F5F5F5"
+                                TextChanged="TxtDestino_TextChanged"
+                                Completed="BuscarDestino_Clicked"/>
+                            <Button
+                                Grid.Column="1"
+                                Text="Borrar"
+                                Clicked="BorrarDestino_Clicked"
+                                BackgroundColor="#E65100"
+                                TextColor="White"/>
+                            <Button
+                                Grid.Column="2"
+                                Text="📍"
+                                Clicked="ElegirDestinoEnMapa_Clicked"
+                                BackgroundColor="#FFFFFF"
+                                TextColor="#E65100"
+                                BorderColor="#E65100"
+                                BorderWidth="1"
+                                WidthRequest="48"/>
+                        </Grid>
 
-                    <Label x:Name="lblCargaResumen"
-                       Text="Todavía no elegiste carga"
-                       FontSize="13"
-                       TextColor="Gray"/>
+                        <CollectionView
+                            x:Name="listaSugerencias"
+                            IsVisible="False"
+                            BackgroundColor="White"
+                            MaximumHeightRequest="140">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="10,8">
+                                        <Label Text="{Binding Description}" TextColor="Black" FontSize="14"/>
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="SugerenciaDestino_Tapped"/>
+                                        </Grid.GestureRecognizers>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
 
-                    <Button Text="Elegir / editar carga"
-                        BackgroundColor="White"
-                        TextColor="#E65100"
-                        BorderColor="#E65100"
-                        BorderWidth="1"
-                        CornerRadius="10"
-                        Clicked="ElegirCarga_Clicked"/>
+                        <!-- RESUMEN DEL TRAYECTO -->
+                        <Border
+                            StrokeShape="RoundRectangle 10"
+                            StrokeThickness="1"
+                            Stroke="#E0E0E0"
+                            Padding="12"
+                            BackgroundColor="#FAFAFA">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Origen" TextColor="Gray" FontSize="12"/>
+                                <Label x:Name="lblOrigenResumen" Text="" FontAttributes="Bold" TextColor="Black"/>
+                                <Label Text="Destino" TextColor="Gray" FontSize="12"/>
+                                <Label x:Name="lblDestinoResumen" Text="" FontAttributes="Bold" TextColor="Black"/>
+                            </VerticalStackLayout>
+                        </Border>
 
-                    <Button x:Name="btnCalcularTarifa"
-                        Text="Calcular tarifa"
-                        BackgroundColor="#E65100"
-                        TextColor="White"
-                        FontAttributes="Bold"
-                        HeightRequest="55"
-                        CornerRadius="12"
-                        Clicked="CalcularTarifa_Clicked"/>
+                        <!-- CARGA -->
+                        <Label Text="¿Qué vas a trasladar?" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
 
-                </VerticalStackLayout>
+                        <Label x:Name="lblCargaResumen"
+                               Text="Todavía no elegiste carga"
+                               FontSize="13"
+                               TextColor="Gray"/>
+
+                        <Button Text="Elegir / editar carga"
+                                BackgroundColor="White"
+                                TextColor="#E65100"
+                                BorderColor="#E65100"
+                                BorderWidth="1"
+                                CornerRadius="10"
+                                Clicked="ElegirCarga_Clicked"/>
+
+                        <Button x:Name="btnCalcularTarifa"
+                                Text="Calcular tarifa"
+                                BackgroundColor="#E65100"
+                                TextColor="White"
+                                FontAttributes="Bold"
+                                HeightRequest="55"
+                                CornerRadius="12"
+                                Clicked="CalcularTarifa_Clicked"/>
+
+                    </VerticalStackLayout>
+                </ScrollView>
 
             </VerticalStackLayout>
+        </Border>
 
-        </ScrollView>
-        
+        <!-- Botón para confirmar la ubicación elegida moviendo el mapa
+             (va sobre el panel colapsado, que deja 64 de cabecera) -->
+        <Button
+            Grid.Row="1"
+            x:Name="btnConfirmarUbicacionMapa"
+            Text="Usar esta ubicación"
+            BackgroundColor="#E65100"
+            TextColor="White"
+            CornerRadius="10"
+            HeightRequest="44"
+            HorizontalOptions="Center"
+            VerticalOptions="End"
+            Margin="0,0,0,84"
+            IsVisible="False"
+            Clicked="ConfirmarUbicacionMapa_Clicked"/>
+
         <!-- OVERLAY: FONDO DEL SHEET DE COTIZACIÓN -->
         <BoxView
+            Grid.Row="0"
+            Grid.RowSpan="2"
             x:Name="fondoCotizacion"
             BackgroundColor="#80000000"
-            IsVisible="False">  
+            IsVisible="False">
             <BoxView.GestureRecognizers>
                 <TapGestureRecognizer Tapped="CerrarCotizacion_Tapped"/>
             </BoxView.GestureRecognizers>
@@ -230,6 +266,8 @@
 
         <!-- BOTTOM SHEET: TARIFAS POR VEHÍCULO -->
         <Border
+            Grid.Row="0"
+            Grid.RowSpan="2"
             x:Name="sheetCotizacion"
             x:DataType="vm:CotizacionViewModel"
             IsVisible="False"
@@ -248,28 +286,28 @@
                     </VerticalStackLayout.GestureRecognizers>
 
                     <BoxView HeightRequest="4"
-                         WidthRequest="40"
-                         CornerRadius="2"
-                         Color="#D0D0D0"
-                         HorizontalOptions="Center"/>
+                             WidthRequest="40"
+                             CornerRadius="2"
+                             Color="#D0D0D0"
+                             HorizontalOptions="Center"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout>
                             <Label Text="Elegí tu vehículo"
-                           FontSize="18"
-                           FontAttributes="Bold"
-                           TextColor="Black"/>
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="Black"/>
                             <Label Text="{Binding ResumenViaje}"
-                           FontSize="12"
-                           TextColor="#757575"/>
+                                   FontSize="12"
+                                   TextColor="#757575"/>
                         </VerticalStackLayout>
 
                         <Label Grid.Column="1"
-                       Text="✕"
-                       FontSize="20"
-                       Padding="8"
-                       TextColor="Gray"
-                       VerticalOptions="Center">
+                               Text="✕"
+                               FontSize="20"
+                               Padding="8"
+                               TextColor="Gray"
+                               VerticalOptions="Center">
                             <Label.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="CerrarCotizacion_Tapped"/>
                             </Label.GestureRecognizers>
@@ -278,21 +316,21 @@
                 </VerticalStackLayout>
 
                 <Label Text="{Binding MensajeSinOpciones}"
-               IsVisible="{Binding SinOpciones}"
-               TextColor="#D32F2F"
-               FontSize="13"/>
+                       IsVisible="{Binding SinOpciones}"
+                       TextColor="#D32F2F"
+                       FontSize="13"/>
 
                 <ScrollView MaximumHeightRequest="300">
                     <VerticalStackLayout Spacing="8"
-                                 BindableLayout.ItemsSource="{Binding Opciones}">
+                                         BindableLayout.ItemsSource="{Binding Opciones}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="models:CotizacionVehiculo">
                                 <Border StrokeShape="RoundRectangle 12"
-                                StrokeThickness="2"
-                                Stroke="{Binding ColorBorde}"
-                                BackgroundColor="{Binding ColorFondo}"
-                                Opacity="{Binding Opacidad}"
-                                Padding="10">
+                                        StrokeThickness="2"
+                                        Stroke="{Binding ColorBorde}"
+                                        BackgroundColor="{Binding ColorFondo}"
+                                        Opacity="{Binding Opacidad}"
+                                        Padding="10">
 
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OpcionVehiculo_Tapped"/>
@@ -301,30 +339,30 @@
                                     <Grid ColumnDefinitions="70,*,Auto" ColumnSpacing="10">
 
                                         <Image Source="{Binding Imagen}"
-                                       HeightRequest="45"
-                                       WidthRequest="60"/>
+                                               HeightRequest="45"
+                                               WidthRequest="60"/>
 
                                         <VerticalStackLayout Grid.Column="1"
-                                                     VerticalOptions="Center">
+                                                             VerticalOptions="Center">
                                             <Label Text="{Binding Nombre}"
-                                           FontAttributes="Bold"
-                                           TextColor="Black"/>
+                                                   FontAttributes="Bold"
+                                                   TextColor="Black"/>
                                             <Label Text="{Binding Detalle}"
-                                           FontSize="11"
-                                           TextColor="Gray"/>
+                                                   FontSize="11"
+                                                   TextColor="Gray"/>
                                             <Label Text="{Binding Etiqueta}"
-                                           IsVisible="{Binding TieneEtiqueta}"
-                                           FontSize="11"
-                                           FontAttributes="Bold"
-                                           TextColor="{Binding ColorEtiqueta}"/>
+                                                   IsVisible="{Binding TieneEtiqueta}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{Binding ColorEtiqueta}"/>
                                         </VerticalStackLayout>
 
                                         <Label Grid.Column="2"
-                                       Text="{Binding PrecioTexto}"
-                                       FontSize="16"
-                                       FontAttributes="Bold"
-                                       TextColor="#212121"
-                                       VerticalOptions="Center"/>
+                                               Text="{Binding PrecioTexto}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="#212121"
+                                               VerticalOptions="Center"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -333,18 +371,20 @@
                 </ScrollView>
 
                 <Button Text="{Binding TextoConfirmar}"
-                    IsEnabled="{Binding PuedeConfirmar}"
-                    BackgroundColor="#2E7D32"
-                    TextColor="White"
-                    FontAttributes="Bold"
-                    HeightRequest="55"
-                    CornerRadius="12"
-                    Clicked="ConfirmarFlete_Clicked"/>
+                        IsEnabled="{Binding PuedeConfirmar}"
+                        BackgroundColor="#2E7D32"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        HeightRequest="55"
+                        CornerRadius="12"
+                        Clicked="ConfirmarFlete_Clicked"/>
             </VerticalStackLayout>
         </Border>
 
-        <!-- OVERLAY: FONDO OSCURO -->
+        <!-- OVERLAY: FONDO OSCURO DEL MENÚ -->
         <BoxView
+            Grid.Row="0"
+            Grid.RowSpan="2"
             x:Name="fondoOscuro"
             BackgroundColor="#80000000"
             IsVisible="False">
@@ -355,6 +395,8 @@
 
         <!-- OVERLAY: PANEL DEL MENÚ -->
         <Border
+            Grid.Row="0"
+            Grid.RowSpan="2"
             x:Name="panelMenu"
             IsVisible="False"
             BackgroundColor="White"

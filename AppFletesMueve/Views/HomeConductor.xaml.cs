@@ -881,7 +881,43 @@ public partial class HomeConductor : ContentPage
         }
         catch { }
     }
+    private const double AlturaCabeceraPanel = 64;
+    private bool _panelColapsado;
 
+    private async Task ColapsarPanelAsync()
+    {
+        if (_panelColapsado)
+            return;
+
+        _panelColapsado = true;
+        var desplazamiento = Math.Max(panelPrincipal.Height - AlturaCabeceraPanel, 0);
+        await panelPrincipal.TranslateToAsync(0, desplazamiento, 250, Easing.CubicOut);
+    }
+
+    private async Task ExpandirPanelAsync()
+    {
+        if (!_panelColapsado)
+            return;
+
+        _panelColapsado = false;
+        await panelPrincipal.TranslateToAsync(0, 0, 250, Easing.CubicOut);
+    }
+
+    private async void PanelCabecera_Swiped(object? sender, SwipedEventArgs e)
+    {
+        if (e.Direction == SwipeDirection.Down)
+            await ColapsarPanelAsync();
+        else if (e.Direction == SwipeDirection.Up)
+            await ExpandirPanelAsync();
+    }
+
+    private async void PanelCabecera_Tapped(object? sender, TappedEventArgs e)
+    {
+        if (_panelColapsado)
+            await ExpandirPanelAsync();
+        else
+            await ColapsarPanelAsync();
+    }
     // ===================== ACCIONES =====================
 
     private async void MisVehiculos_Clicked(object? sender, EventArgs e)
