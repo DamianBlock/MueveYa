@@ -47,6 +47,7 @@ namespace AppFletesMueve.Views
             _chatPageFactory = chatPageFactory ?? throw new ArgumentNullException(nameof(chatPageFactory));
 
             InitializeComponent();
+            SizeChanged += (_, _) => scrollPanel.MaximumHeightRequest = Math.Max(Height * 0.6, 200);
             sheetCotizacion.BindingContext = _cotizacionVm;
             Loaded += async (_, _) => await VerificarViajeActivoAsync();
 

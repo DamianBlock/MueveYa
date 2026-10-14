@@ -50,6 +50,8 @@ public partial class HomeConductor : ContentPage
         _chatToolbarItem = new ToolbarItem { Text = "Chat", Order = ToolbarItemOrder.Primary };
         _chatToolbarItem.Clicked += ChatItem_Clicked;
         ToolbarItems.Add(_chatToolbarItem);
+
+        SizeChanged += (_, _) => scrollPanel.MaximumHeightRequest = Math.Max(Height * 0.6, 200);
     }
 
     // ===================== CHAT =====================
