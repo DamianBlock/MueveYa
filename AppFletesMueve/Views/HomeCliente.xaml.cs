@@ -47,7 +47,7 @@ namespace AppFletesMueve.Views
             _chatPageFactory = chatPageFactory ?? throw new ArgumentNullException(nameof(chatPageFactory));
 
             InitializeComponent();
-            SizeChanged += (_, _) => scrollPanel.MaximumHeightRequest = Math.Max(Height * 0.6, 200);
+            SizeChanged += (_, _) => scrollPanel.MaximumHeightRequest = Math.Max(Height * 0.55, 200);
             sheetCotizacion.BindingContext = _cotizacionVm;
             Loaded += async (_, _) => await VerificarViajeActivoAsync();
 
@@ -573,23 +573,44 @@ namespace AppFletesMueve.Views
             else
                 await ColapsarPanelAsync();
         }
-        private void ElegirOrigenEnMapa_Clicked(object? sender, EventArgs e)
+        private void ElegirOrigenEnMapa_Clicked(object? sender, EventArgs e) => EntrarModoMapa(esOrigen: true);
+
+
+        private void ElegirDestinoEnMapa_Clicked(object? sender, EventArgs e) => EntrarModoMapa(esOrigen: false);
+
+        private void EntrarModoMapa(bool esOrigen)
         {
-            _eligiendoOrigenEnMapa = true;
-            _eligiendoDestinoEnMapa = false;
+            _eligiendoOrigenEnMapa = esOrigen;
+            _eligiendoDestinoEnMapa = !esOrigen;
+
+            txtOrigen.Unfocus();
+            txtDestino.Unfocus();
+            listaSugerenciasOrigen.IsVisible = false;
+            listaSugerencias.IsVisible = false;
+
+            lblModoMapa.Text = esOrigen
+                ? "Mové el mapa para ubicar el ORIGEN"
+                : "Mové el mapa para ubicar el DESTINO";
+
+            panelPrincipal.IsVisible = false;   // se oculta del todo, no solo se baja
             pinCentral.IsVisible = true;
-            btnConfirmarUbicacionMapa.IsVisible = true;
-            _ = ColapsarPanelAsync();
+            barraConfirmarUbicacion.IsVisible = true;
         }
 
-        private void ElegirDestinoEnMapa_Clicked(object? sender, EventArgs e)
+        private void SalirModoMapa()
         {
-            _eligiendoDestinoEnMapa = true;
             _eligiendoOrigenEnMapa = false;
-            pinCentral.IsVisible = true;
-            btnConfirmarUbicacionMapa.IsVisible = true;
-            _ = ColapsarPanelAsync();
+            _eligiendoDestinoEnMapa = false;
+
+            pinCentral.IsVisible = false;
+            barraConfirmarUbicacion.IsVisible = false;
+
+            _panelColapsado = false;
+            panelPrincipal.TranslationY = 0;
+            panelPrincipal.IsVisible = true;
         }
+
+        private void CancelarUbicacionMapa_Clicked(object? sender, EventArgs e) => SalirModoMapa();
 
         private async void ConfirmarUbicacionMapa_Clicked(object? sender, EventArgs e)
         {
@@ -628,11 +649,7 @@ namespace AppFletesMueve.Views
                 await ActualizarDestinoAsync(centro, etiqueta);
             }
 
-            pinCentral.IsVisible = false;
-            btnConfirmarUbicacionMapa.IsVisible = false;
-            _eligiendoOrigenEnMapa = false;
-            _eligiendoDestinoEnMapa = false;
-            await ExpandirPanelAsync();
+            SalirModoMapa();
         }
         private void ActualizarTrayecto()
         {

@@ -146,7 +146,7 @@ namespace AppFletesMueve.Views
             base.OnAppearing();
             try
             {
-                if (_hub.State != HubConnectionState.Connected) await _hub.StartAsync();
+                await AsegurarConexionAsync();
                 await _hub.SendAsync("JoinGroup", _groupName);
 
                 if (_groupName.StartsWith("solicitud-") &&
@@ -163,7 +163,10 @@ namespace AppFletesMueve.Views
                     catch { }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Chat: {ex}");
+            }
         }
 
         private async Task MarkReadBySolicitudAsync(int solicitudId, DateTime beforeUtc, string readBy)
@@ -206,7 +209,12 @@ namespace AppFletesMueve.Views
             if (string.IsNullOrEmpty(text)) return;
             try
             {
-                if (_hub.State != HubConnectionState.Connected) await _hub.StartAsync();
+                await AsegurarConexionAsync();
+                if (_hub.State != HubConnectionState.Connected)
+                {
+                    await DisplayAlertAsync("Chat", "No se pudo enviar el mensaje. Revisá tu conexión.", "Aceptar");
+                    return;
+                }
                 await _hub.SendAsync("SendMessageToGroup", _groupName, _userName, text);
                 _entry.Text = string.Empty;
                 // El mensaje se agrega cuando vuelve del servidor (ReceiveMessage), así no se duplica
@@ -249,6 +257,20 @@ namespace AppFletesMueve.Views
                 }
             }
             catch { }
+        }
+        private async Task AsegurarConexionAsync()
+        {
+            for (var intento = 0; intento < 5 && _hub.State != HubConnectionState.Connected; intento++)
+            {
+                if (_hub.State == HubConnectionState.Disconnected)
+                {
+                    try { await _hub.StartAsync(); }
+                    catch { }
+                }
+
+                if (_hub.State != HubConnectionState.Connected)
+                    await Task.Delay(1000);
+            }
         }
     }
 }

@@ -169,19 +169,7 @@ public partial class ViajeClientePage : ContentPage
 
         _ = Task.Run(async () =>
         {
-            while (!token.IsCancellationRequested)
-            {
-                try
-                {
-                    await Task.Delay(8000, token);
-                }
-                catch (TaskCanceledException)
-                {
-                    break;
-                }
-
-                RecargarEnUi();
-            }
+            RevisarEnUi();
         }, token);
     }
 
@@ -194,7 +182,30 @@ public partial class ViajeClientePage : ContentPage
         }
         catch { }
     }
+    private void RevisarEnUi()
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await RecargarAsync();
+            await AsegurarConexionAsync();
+        });
+    }
 
+    // Si la conexión en tiempo real se cayó, la vuelve a abrir
+    private async Task AsegurarConexionAsync()
+    {
+        if (_hub == null || _hub.State == HubConnectionState.Disconnected)
+            await ConectarHubAsync();
+    }
+
+    private async Task EsperarConexionAsync()
+    {
+        await AsegurarConexionAsync();
+
+        // Si está conectando o reconectando, dar unos segundos
+        for (var i = 0; i < 5 && _hub != null && _hub.State is HubConnectionState.Connecting or HubConnectionState.Reconnecting; i++)
+            await Task.Delay(1000);
+    }
     // ===================== CONTADOR DE ESPERA =====================
 
     private void IniciarCronometro()
@@ -424,9 +435,11 @@ public partial class ViajeClientePage : ContentPage
 
     private async void Chat_Clicked(object? sender, EventArgs e)
     {
+        await EsperarConexionAsync();
+
         if (_hub == null || _hub.State != HubConnectionState.Connected)
         {
-            await DisplayAlertAsync("Chat", "No hay conexión al servidor de mensajes.", "Aceptar");
+            await DisplayAlertAsync("Chat", "No hay conexión al servidor de mensajes. Revisá tu internet e intentá de nuevo.", "Aceptar");
             return;
         }
 

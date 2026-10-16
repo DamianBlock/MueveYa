@@ -350,6 +350,19 @@ public partial class HomeConductor : ContentPage
         _sincronizando = true;
         try
         {
+            // Si la conexión en tiempo real se cayó, volver a abrirla y a unirse a los grupos
+            if (_hub != null && _hub.State == HubConnectionState.Disconnected)
+            {
+                try
+                {
+                    await _hub.StartAsync();
+                    await UnirseGruposAsync();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"No se pudo reconectar el hub: {ex}");
+                }
+            }
             // Con un viaje en curso: ¿lo cancelaron, terminó o cambió de etapa?
             if (_solicitudEnCurso != null)
             {

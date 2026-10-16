@@ -236,21 +236,47 @@
             </VerticalStackLayout>
         </Border>
 
-        <!-- Botón para confirmar la ubicación elegida moviendo el mapa
-             (va sobre el panel colapsado, que deja 64 de cabecera) -->
-        <Button
+        <!-- BARRA PARA CONFIRMAR LA UBICACIÓN ELEGIDA EN EL MAPA
+     (reemplaza al panel mientras se mueve el pin) -->
+        <Border
             Grid.Row="1"
-            x:Name="btnConfirmarUbicacionMapa"
-            Text="Usar esta ubicación"
-            BackgroundColor="#E65100"
-            TextColor="White"
-            CornerRadius="10"
-            HeightRequest="44"
-            HorizontalOptions="Center"
-            VerticalOptions="End"
-            Margin="0,0,0,84"
+            x:Name="barraConfirmarUbicacion"
             IsVisible="False"
-            Clicked="ConfirmarUbicacionMapa_Clicked"/>
+            VerticalOptions="End"
+            BackgroundColor="White"
+            Stroke="#E0E0E0"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 20,20,0,0"
+            Padding="16,14,16,16">
+
+                    <VerticalStackLayout Spacing="12">
+                        <Label x:Name="lblModoMapa"
+                       Text="Mové el mapa para ubicar el pin"
+                       FontSize="15"
+                       FontAttributes="Bold"
+                       TextColor="Black"
+                       HorizontalOptions="Center"/>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Grid.Column="0"
+                            Text="Cancelar"
+                            BackgroundColor="White"
+                            TextColor="#E65100"
+                            BorderColor="#E65100"
+                            BorderWidth="1"
+                            CornerRadius="10"
+                            HeightRequest="46"
+                            Clicked="CancelarUbicacionMapa_Clicked"/>
+                            <Button Grid.Column="1"
+                            Text="Usar esta ubicación"
+                            BackgroundColor="#E65100"
+                            TextColor="White"
+                            CornerRadius="10"
+                            HeightRequest="46"
+                            Clicked="ConfirmarUbicacionMapa_Clicked"/>
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
 
         <!-- OVERLAY: FONDO DEL SHEET DE COTIZACIÓN -->
         <BoxView
