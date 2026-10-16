@@ -67,7 +67,6 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<AppFletesMueve.Api.Hubs.SolicitudesHub>("/hubs/solicitudes");
-app.MapGet("/api/version", () => System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
 app.Run();
 
 static string ConvertirUrlPostgres(string url)
