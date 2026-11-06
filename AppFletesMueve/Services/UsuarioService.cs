@@ -1,5 +1,7 @@
 ﻿using System.Net.Http.Json;
 using AppFletesMueve.Models;
+using AppFletesMueve.Services;
+
 
 namespace AppFletesMueve.Services
 {
@@ -7,10 +9,14 @@ namespace AppFletesMueve.Services
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiUrl;
-
+        public async Task CerrarSesionAsync()
+        {
+            try { await _httpClient.PostAsync(_apiUrl + "Usuario/logout", null); }
+            catch { }
+        }
         public UsuarioService()
         {
-            _httpClient = new HttpClient();
+            _httpClient = ApiHttp.CrearCliente();
 
             // Priorizar valor manual si fue guardado en Preferences (útil para pruebas)
             var pref = Preferences.Get("ApiBaseUrl", string.Empty);

@@ -10,7 +10,7 @@
              BackgroundColor="#F5F5F5"
              NavigationPage.HasNavigationBar="False">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*" SafeAreaEdges="SoftInput">
 
         <!-- BARRA SUPERIOR -->
         <Grid Grid.Row="0" BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="Auto,*,Auto">

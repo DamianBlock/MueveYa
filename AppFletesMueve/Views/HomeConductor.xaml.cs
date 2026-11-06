@@ -22,6 +22,7 @@ public partial class HomeConductor : ContentPage
     private bool _cambiandoServicio;
     private bool _chatAbierto;
     private bool _sincronizando;
+    private bool _inicioVisible;
     private CancellationTokenSource? _syncCts;
     private IDispatcherTimer? _cronometro;
     private TimeSpan _desfaseServidor = TimeSpan.Zero;
@@ -87,6 +88,7 @@ public partial class HomeConductor : ContentPage
     {
         base.OnAppearing();
         _chatAbierto = false;
+        _inicioVisible = true;
 
         await CargarEstadoAsync();
         IniciarSincronizacion();
@@ -180,12 +182,15 @@ public partial class HomeConductor : ContentPage
     protected override async void OnDisappearing()
     {
         base.OnDisappearing();
+        _inicioVisible = false;
+
+        // Con el servicio iniciado, un viaje en curso o el chat abierto, la conexión
+        // sigue activa aunque el conductor mire otra pestaña
+        if (_chatAbierto || _enServicio || _solicitudEnCurso != null)
+            return;
+
         DetenerSincronizacion();
         DetenerCronometro();
-
-        // Si se abrió el chat encima, se mantiene la conexión porque el chat la usa
-        if (_chatAbierto)
-            return;
 
         try
         {
@@ -251,6 +256,7 @@ public partial class HomeConductor : ContentPage
             {
                 _solicitudPendiente = solicitud;
                 MostrarViajePendiente(solicitud);
+                _ = AvisarNuevaSolicitudAsync();
             }
         }
         catch (Exception ex)
@@ -258,7 +264,25 @@ public partial class HomeConductor : ContentPage
             System.Diagnostics.Debug.WriteLine(ex);
         }
     }
+    private void IrAInicio()
+    {
+        if (Parent is NavigationPage navegacion && navegacion.Parent is TabbedPage pestanas)
+            pestanas.CurrentPage = navegacion;
+    }
 
+    private async Task AvisarNuevaSolicitudAsync()
+    {
+        if (_inicioVisible)
+            return;
+
+        var pagina = Application.Current?.Windows.FirstOrDefault()?.Page;
+        if (pagina == null)
+            return;
+
+        bool ver = await pagina.DisplayAlertAsync("MUEVE", "Hay un nuevo viaje disponible.", "Ver", "Después");
+        if (ver)
+            IrAInicio();
+    }
     private async Task OnSolicitudTomadaAsync(int solicitudId)
     {
         // Otro conductor la tomó o el cliente la canceló: sacarla de la pantalla
