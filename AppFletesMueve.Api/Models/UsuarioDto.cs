@@ -10,6 +10,7 @@ namespace AppFletesMueve.Api.Models
         public string Apellido { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string TipoUsuario { get; set; } = string.Empty;
+        public string? TokenSesion { get; set; }
 
         public static UsuarioDto FromEntity(Usuario u) => new()
         {

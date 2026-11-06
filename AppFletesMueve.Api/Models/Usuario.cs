@@ -17,5 +17,8 @@
         public string Password { get; set; } = string.Empty;
 
         public string TipoUsuario { get; set; } = string.Empty;
+        public string? TokenSesionHash { get; set; }
+        public DateTime? SesionIniciadaUtc { get; set; }
+        public string? TokenSesion { get; set; }
     }
 }
