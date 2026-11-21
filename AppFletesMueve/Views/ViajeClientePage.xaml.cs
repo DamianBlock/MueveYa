@@ -63,7 +63,7 @@ public partial class ViajeClientePage : ContentPage
             if (_hub == null)
             {
                 _hub = new HubConnectionBuilder()
-                    .WithUrl(TransporteService.HubUrl)
+                    .WithUrl(TransporteService.HubUrl, ApiHttp.ConfigurarHub)
                     .WithAutomaticReconnect()
                     .Build();
 

@@ -42,7 +42,8 @@ public partial class LoginPage : ContentPage
         SesionUsuario.UsuarioId = usuario.UsuarioId;
         SesionUsuario.Nombre = usuario.Nombre;
         SesionUsuario.TipoUsuario = usuario.TipoUsuario;
-
+        SesionUsuario.TokenSesion = usuario.TokenSesion;
+        Preferences.Set("TokenSesion", usuario.TokenSesion ?? string.Empty);
         Preferences.Set("UsuarioId", usuario.UsuarioId);
         Preferences.Set("Nombre", usuario.Nombre);
         Preferences.Set("Apellido", usuario.Apellido);
@@ -63,14 +64,13 @@ public partial class LoginPage : ContentPage
                                 services?.GetService<TransporteService>() ?? new TransporteService(),
                                 services?.GetService<PlacesService>() ?? new PlacesService(),
                                 services?.GetService<IChatPageFactory>() ?? new ChatPageFactory());
-                targetPage = new NavigationPage(home);
+                targetPage = new MenuClientePage(home);
             }
             else
             {
                 var conductor = services?.GetService<HomeConductor>() ?? new HomeConductor();
-                targetPage = new NavigationPage(conductor);
+                targetPage = new MenuConductorPage(conductor);
             }
-
             app.Windows[0].Page = targetPage;
         }
     }

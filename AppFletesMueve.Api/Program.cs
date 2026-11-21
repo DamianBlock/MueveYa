@@ -65,6 +65,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthorization();
+app.UseMiddleware<AppFletesMueve.Api.Middleware.SesionMiddleware>();
 app.MapControllers();
 app.MapHub<AppFletesMueve.Api.Hubs.SolicitudesHub>("/hubs/solicitudes");
 app.Run();

@@ -108,7 +108,7 @@ namespace AppFletesMueve.Services
 
         public static string HubUrl => ApiUrl.Replace("/api/", "/hubs/solicitudes");
 
-        public TransporteService() { _httpClient = new HttpClient(); }
+        public TransporteService() { _httpClient = ApiHttp.CrearCliente(); }
 
         private static async Task<string> LeerMensajeError(HttpResponseMessage response)
         {

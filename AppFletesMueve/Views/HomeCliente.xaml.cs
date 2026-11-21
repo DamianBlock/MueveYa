@@ -50,6 +50,7 @@ namespace AppFletesMueve.Views
             SizeChanged += (_, _) => scrollPanel.MaximumHeightRequest = Math.Max(Height * 0.55, 200);
             sheetCotizacion.BindingContext = _cotizacionVm;
             Loaded += async (_, _) => await VerificarViajeActivoAsync();
+            mapCliente.MapClicked += async (_, _) => await OcultarTecladoAsync();
 
             string nombre = Preferences.Get("Nombre", "Cliente");
             lblBienvenida.Text = $"Hola, {nombre}";
@@ -70,7 +71,7 @@ namespace AppFletesMueve.Views
             if (_hubCliente != null) return;
 
             _hubCliente = new HubConnectionBuilder()
-                .WithUrl(TransporteService.HubUrl)
+                .WithUrl(TransporteService.HubUrl, ApiHttp.ConfigurarHub)
                 .WithAutomaticReconnect()
                 .Build();
 
@@ -250,6 +251,7 @@ namespace AppFletesMueve.Views
                 return;
             }
 
+            await OcultarTecladoAsync();
             listaSugerencias.IsVisible = false;
 
             try
@@ -280,6 +282,7 @@ namespace AppFletesMueve.Views
                 return;
             }
 
+            await OcultarTecladoAsync();
             listaSugerenciasOrigen.IsVisible = false;
 
             try
@@ -399,8 +402,9 @@ namespace AppFletesMueve.Views
         private async void SugerenciaOrigen_Tapped(object? sender, TappedEventArgs e)
         {
 
-            if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
+            if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia) 
                 return;
+            await OcultarTecladoAsync();
 
             _debounceCtsOrigen?.Cancel();
             listaSugerenciasOrigen.IsVisible = false;
@@ -455,6 +459,7 @@ namespace AppFletesMueve.Views
         {
             if (sender is not Grid grid || grid.BindingContext is not PlaceSuggestion sugerencia)
                 return;
+            await OcultarTecladoAsync();
 
             _debounceCtsDestino?.Cancel();
             listaSugerencias.IsVisible = false;
@@ -580,6 +585,7 @@ namespace AppFletesMueve.Views
 
         private void EntrarModoMapa(bool esOrigen)
         {
+            _ = OcultarTecladoAsync();
             _eligiendoOrigenEnMapa = esOrigen;
             _eligiendoDestinoEnMapa = !esOrigen;
 
@@ -709,6 +715,7 @@ namespace AppFletesMueve.Views
 
         private async void CalcularTarifa_Clicked(object? sender, EventArgs e)
         {
+            await OcultarTecladoAsync();
             if (_ultimoDestino is not { } destino)
             {
                 await DisplayAlertAsync("MUEVE", "Primero buscá y seleccioná un destino.", "Aceptar");
@@ -848,6 +855,18 @@ namespace AppFletesMueve.Views
             var activo = await _transporteService.ObtenerViajeActivoDeCliente(SesionUsuario.UsuarioId);
             if (activo != null)
                 await Navigation.PushAsync(new ViajeClientePage(activo.SolicitudFleteId));
+        }
+        private async Task OcultarTecladoAsync()
+        {
+            try
+            {
+                await txtOrigen.HideSoftInputAsync(CancellationToken.None);
+                await txtDestino.HideSoftInputAsync(CancellationToken.None);
+            }
+            catch { }
+
+            txtOrigen.Unfocus();
+            txtDestino.Unfocus();
         }
     }
 }

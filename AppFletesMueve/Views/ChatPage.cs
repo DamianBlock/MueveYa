@@ -1,3 +1,4 @@
+using AppFletesMueve.Services;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
@@ -173,7 +174,7 @@ namespace AppFletesMueve.Views
         {
             try
             {
-                var http = new HttpClient();
+                var http = ApiHttp.CrearCliente();
 #if DEBUG
                 var apiBase = "http://10.0.2.2:5051/api/";
 #else
@@ -226,7 +227,7 @@ namespace AppFletesMueve.Views
         {
             try
             {
-                var http = new HttpClient();
+                var http = ApiHttp.CrearCliente();
 #if DEBUG
                 var apiBase = "http://10.0.2.2:5051/api/";
 #else

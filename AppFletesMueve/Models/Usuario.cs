@@ -22,5 +22,8 @@ namespace AppFletesMueve.Models
 
         // CLIENTE o CONDUCTOR
         public string TipoUsuario { get; set; } = string.Empty;
+
+        // Token de sesión devuelto por servidor
+        public string? TokenSesion { get; set; }
     }
 }
