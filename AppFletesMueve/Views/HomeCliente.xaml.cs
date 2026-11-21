@@ -71,7 +71,7 @@ namespace AppFletesMueve.Views
             if (_hubCliente != null) return;
 
             _hubCliente = new HubConnectionBuilder()
-                .WithUrl(TransporteService.HubUrl)
+                .WithUrl(TransporteService.HubUrl, ApiHttp.ConfigurarHub)
                 .WithAutomaticReconnect()
                 .Build();
 

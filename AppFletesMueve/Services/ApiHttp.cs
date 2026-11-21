@@ -9,13 +9,15 @@ namespace AppFletesMueve.Services
     // No usarlo con servicios de terceros (Google, OSRM): el token no debe salir de la API.
     public class SesionHandler : DelegatingHandler
     {
-        public SesionHandler() : base(new HttpClientHandler()) { }
+        // No seguir redirecciones: evita reenviar los encabezados de sesión a otro origen.
+        public SesionHandler() : base(new HttpClientHandler { AllowAutoRedirect = false }) { }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var token = SesionUsuario.TokenSesion;
+            var destinoConfiable = ApiHttp.EsOrigenApiConfiable(request.RequestUri);
 
-            if (SesionUsuario.UsuarioId > 0 && !string.IsNullOrEmpty(token))
+            if (destinoConfiable && SesionUsuario.UsuarioId > 0 && !string.IsNullOrEmpty(token))
             {
                 request.Headers.Remove("X-Usuario-Id");
                 request.Headers.Remove("X-Sesion");
@@ -27,7 +29,7 @@ namespace AppFletesMueve.Services
 
             // Con un usuario ya iniciado, un 401 significa que su sesión dejó de valer
             // (por ejemplo, porque entró desde otro dispositivo).
-            if (SesionUsuario.UsuarioId > 0 && respuesta.StatusCode == HttpStatusCode.Unauthorized)
+            if (destinoConfiable && SesionUsuario.UsuarioId > 0 && respuesta.StatusCode == HttpStatusCode.Unauthorized)
             {
                 _ = SesionService.CerrarAsync(
                     "Tu sesión se cerró, por ejemplo porque iniciaste sesión en otro dispositivo. Volvé a ingresar.");
@@ -39,11 +41,29 @@ namespace AppFletesMueve.Services
 
     public static class ApiHttp
     {
+        // Los valores en Preferences no determinan si un origen es confiable.
+#if DEBUG
+        private static readonly Uri[] OrigenesApiConfiables =
+        {
+            new("http://10.0.2.2:5051"),
+            new("http://localhost:5051"),
+            new("https://mueveya.onrender.com")
+        };
+#else
+        private static readonly Uri[] OrigenesApiConfiables =
+        {
+            new("https://mueveya.onrender.com")
+        };
+#endif
+
         public static HttpClient CrearCliente() => new(new SesionHandler());
 
         // Para las conexiones SignalR: .WithUrl(TransporteService.HubUrl, ApiHttp.ConfigurarHub)
         public static void ConfigurarHub(HttpConnectionOptions opciones)
         {
+            if (!EsOrigenApiConfiable(opciones.Url))
+                return;
+
             var token = SesionUsuario.TokenSesion;
 
             if (SesionUsuario.UsuarioId > 0 && !string.IsNullOrEmpty(token))
@@ -52,19 +72,35 @@ namespace AppFletesMueve.Services
                 opciones.Headers["X-Sesion"] = token;
             }
         }
+
+        internal static bool EsOrigenApiConfiable(Uri? destino)
+        {
+            if (destino is null || !destino.IsAbsoluteUri || !string.IsNullOrEmpty(destino.UserInfo))
+                return false;
+
+            foreach (var origen in OrigenesApiConfiables)
+            {
+                if (string.Equals(destino.Scheme, origen.Scheme, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(destino.Host, origen.Host, StringComparison.OrdinalIgnoreCase) &&
+                    destino.Port == origen.Port)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     // Cierra la sesión local (y opcionalmente avisa al servidor) y vuelve al login
     public static class SesionService
     {
-        private static bool _cerrando;
+        private static int _cerrando;
 
         public static async Task CerrarAsync(string? mensaje = null, bool avisarAlServidor = false)
         {
-            if (_cerrando)
+            if (Interlocked.Exchange(ref _cerrando, 1) != 0)
                 return;
-
-            _cerrando = true;
 
             try
             {
@@ -100,7 +136,7 @@ namespace AppFletesMueve.Services
             }
             finally
             {
-                _cerrando = false;
+                Volatile.Write(ref _cerrando, 0);
             }
         }
     }
