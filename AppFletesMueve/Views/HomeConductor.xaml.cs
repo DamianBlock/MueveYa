@@ -90,6 +90,7 @@ public partial class HomeConductor : ContentPage
         _chatAbierto = false;
         _inicioVisible = true;
 
+        await CentrarEnUbicacionActualAsync();
         await CargarEstadoAsync();
         IniciarSincronizacion();
         IniciarCronometro();
@@ -155,6 +156,33 @@ public partial class HomeConductor : ContentPage
             System.Diagnostics.Debug.WriteLine($"Error SignalR: {ex}");
         }
     }
+
+    private async Task CentrarEnUbicacionActualAsync()
+    {
+        var permiso = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
+        if (permiso != PermissionStatus.Granted)
+            permiso = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+
+        if (permiso != PermissionStatus.Granted)
+            return;
+
+        try
+        {
+            var solicitud = new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));
+            var ubicacion = await Geolocation.Default.GetLocationAsync(solicitud);
+            if (ubicacion != null)
+            {
+                mapConductor.MoveToRegion(MapSpan.FromCenterAndRadius(
+                    new Location(ubicacion.Latitude, ubicacion.Longitude),
+                    Distance.FromKilometers(5)));
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"No se pudo obtener ubicación del conductor: {ex}");
+        }
+    }
+
     private async Task ActualizarBadgeChatAsync()
     {
         var viaje = _solicitudEnCurso;
