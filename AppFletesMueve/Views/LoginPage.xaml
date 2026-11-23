@@ -3,81 +3,67 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="AppFletesMueve.Views.LoginPage"
-    BackgroundColor="#F5F5F5">
+    BackgroundColor="#D94B05">
 
-    <ScrollView>
+    <Grid>
+        <Image Source="mueve_login.png" Aspect="AspectFill" />
 
-        <VerticalStackLayout
-            Padding="30"
-            Spacing="15"
-            VerticalOptions="Center">
+        <ScrollView>
+            <Grid Padding="24,28" RowDefinitions="*,Auto">
+                <VerticalStackLayout Grid.Row="1" Spacing="12">
+                    <Label
+                        Text="Ingresá para continuar"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        HorizontalOptions="Center" />
 
-            <!-- Logo -->
+                    <Border
+                        BackgroundColor="#F2FFFFFF"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 20"
+                        Padding="18">
+                        <VerticalStackLayout Spacing="12">
+                            <Entry
+                                x:Name="txtEmail"
+                                Placeholder="Correo electrónico"
+                                Keyboard="Email"
+                                BackgroundColor="White"
+                                TextColor="Black"
+                                PlaceholderColor="#757575" />
 
-            <Image
-                Source="logo_mueve.png"
-                HeightRequest="130"
-                HorizontalOptions="Center" />
+                            <Entry
+                                x:Name="txtPassword"
+                                Placeholder="Contraseña"
+                                IsPassword="True"
+                                BackgroundColor="White"
+                                TextColor="Black"
+                                PlaceholderColor="#757575" />
 
-            <Label
-                Text="Bienvenido"
-                FontSize="30"
-                FontAttributes="Bold"
-                TextColor="#E65100"
-                HorizontalOptions="Center" />
+                            <Button
+                                Text="INGRESAR"
+                                BackgroundColor="#E65100"
+                                TextColor="White"
+                                FontAttributes="Bold"
+                                HeightRequest="54"
+                                CornerRadius="12"
+                                Clicked="Ingresar_Clicked" />
 
-            <Label
-                Text="Inicia sesión para continuar"
-                FontSize="15"
-                TextColor="Gray"
-                HorizontalOptions="Center" />
-
-            <!-- Correo -->
-
-            <Entry
-                x:Name="txtEmail"
-                Placeholder="Correo electrónico"
-                Keyboard="Email"
-                BackgroundColor="White"
-                TextColor="Black"
-                PlaceholderColor="Gray" />
-
-            <!-- Contraseña -->
-
-            <Entry
-                x:Name="txtPassword"
-                Placeholder="Contraseña"
-                IsPassword="True"
-                BackgroundColor="White"
-                TextColor="Black"
-                PlaceholderColor="Gray" />
-
-            <!-- Botón ingreso -->
-
-            <Button
-                Text="INGRESAR"
-                BackgroundColor="#E65100"
-                TextColor="White"
-                FontAttributes="Bold"
-                HeightRequest="55"
-                CornerRadius="12"
-                Clicked="Ingresar_Clicked" />
-
-            <!-- Botón registro -->
-
-            <Button
-                Text="CREAR CUENTA"
-                BackgroundColor="White"
-                BorderColor="#E65100"
-                BorderWidth="2"
-                TextColor="#E65100"
-                FontAttributes="Bold"
-                HeightRequest="55"
-                CornerRadius="12"
-                Clicked="Registro_Clicked" />
-
-        </VerticalStackLayout>
-
-    </ScrollView>
+                            <Button
+                                Text="CREAR CUENTA"
+                                BackgroundColor="White"
+                                BorderColor="#E65100"
+                                BorderWidth="2"
+                                TextColor="#E65100"
+                                FontAttributes="Bold"
+                                HeightRequest="52"
+                                CornerRadius="12"
+                                Clicked="Registro_Clicked" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+        </ScrollView>
+    </Grid>
 
 </ContentPage>
