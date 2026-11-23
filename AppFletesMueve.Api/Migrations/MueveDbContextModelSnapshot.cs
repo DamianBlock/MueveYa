@@ -17,7 +17,7 @@ namespace AppFletesMueve.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -280,12 +280,21 @@ namespace AppFletesMueve.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("SesionIniciadaUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("TipoUsuario")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenSesion")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenSesionHash")
                         .HasColumnType("text");
 
                     b.HasKey("UsuarioId");
