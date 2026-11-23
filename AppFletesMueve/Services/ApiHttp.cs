@@ -32,7 +32,7 @@ namespace AppFletesMueve.Services
             if (destinoConfiable && SesionUsuario.UsuarioId > 0 && respuesta.StatusCode == HttpStatusCode.Unauthorized)
             {
                 _ = SesionService.CerrarAsync(
-                    "Tu sesión se cerró, por ejemplo porque iniciaste sesión en otro dispositivo. Volvé a ingresar.");
+                    "Tu sesión se cerró porque iniciaste sesión en otro dispositivo. Volvé a ingresar.");
             }
 
             return respuesta;
