@@ -2,6 +2,7 @@
 using AppFletesMueve.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using AppFletesMueve.Api.Middleware;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -32,8 +33,8 @@ namespace AppFletesMueve.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var usuario = _context.Usuarios
-                .FirstOrDefault(x => x.Email == request.Email);
+            var usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(x => x.Email == request.Email);
 
             if (usuario == null ||
                 !BCrypt.Net.BCrypt.Verify(request.Password, usuario.Password))
@@ -42,6 +43,33 @@ namespace AppFletesMueve.Api.Controllers
                 {
                     mensaje = "Credenciales incorrectas"
                 });
+            }
+
+            if (!string.IsNullOrEmpty(usuario.TokenSesionHash) && !request.ConfirmarReemplazoSesion)
+            {
+                return Conflict(new
+                {
+                    codigo = "SESION_ACTIVA",
+                    mensaje = "Ya hay una sesión activa en otro dispositivo."
+                });
+            }
+
+            // Una nueva sesión de conductor comienza fuera de servicio, salvo que tenga
+            // un viaje activo que debe conservarse hasta que se finalice.
+            var conductor = await _context.Conductores
+                .Include(c => c.Vehiculos)
+                .FirstOrDefaultAsync(c => c.UsuarioId == usuario.UsuarioId);
+            if (conductor != null)
+            {
+                var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
+                    s.ConductorId == conductor.ConductorId && EstadosViaje.Activos.Contains(s.Estado));
+
+                if (!tieneViajeActivo)
+                {
+                    conductor.Disponible = false;
+                    foreach (var vehiculo in conductor.Vehiculos)
+                        vehiculo.Disponible = false;
+                }
             }
 
             var token = SesionTokens.Generar();

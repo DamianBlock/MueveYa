@@ -1,10 +1,13 @@
 ﻿using System.Net.Http.Json;
 using AppFletesMueve.Models;
 using AppFletesMueve.Services;
+using System.Text.Json;
 
 
 namespace AppFletesMueve.Services
 {
+    public sealed record ResultadoLogin(Usuario? Usuario, bool RequiereConfirmacionSesion);
+
     public class UsuarioService
     {
         private readonly HttpClient _httpClient;
@@ -83,20 +86,21 @@ namespace AppFletesMueve.Services
             }
         }
 
-        public async Task<Usuario?> Login(string email, string password)
+        public async Task<ResultadoLogin> Login(string email, string password, bool confirmarReemplazoSesion = false)
         {
             var response = await _httpClient.PostAsJsonAsync(
                 _apiUrl + "Usuario/login",
                 new
                 {
                     Email = email,
-                    Password = password
+                    Password = password,
+                    ConfirmarReemplazoSesion = confirmarReemplazoSesion
                 });
 
-            // Log status and response body for debugging
+            string contenido = string.Empty;
             try
             {
-                var contenido = await response.Content.ReadAsStringAsync();
+                contenido = await response.Content.ReadAsStringAsync();
                 System.Diagnostics.Debug.WriteLine($"API STATUS: {(int)response.StatusCode}");
                 System.Diagnostics.Debug.WriteLine($"API RESPUESTA: {contenido}");
             }
@@ -105,11 +109,17 @@ namespace AppFletesMueve.Services
                 System.Diagnostics.Debug.WriteLine($"ERROR leyendo respuesta API: {ex}");
             }
 
-            if (!response.IsSuccessStatusCode)
-                return null;
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                return new ResultadoLogin(null, true);
 
-            return await response.Content
-                .ReadFromJsonAsync<Usuario>();
+            if (!response.IsSuccessStatusCode)
+                return new ResultadoLogin(null, false);
+
+            var usuario = JsonSerializer.Deserialize<Usuario>(contenido, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            return new ResultadoLogin(usuario, false);
         }
     }
 }

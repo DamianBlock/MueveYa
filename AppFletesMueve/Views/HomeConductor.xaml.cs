@@ -1111,16 +1111,16 @@ public partial class HomeConductor : ContentPage
             return;
         }
 
+        if (_enServicio)
+        {
+            await DisplayAlertAsync("MUEVE", "Primero detené el servicio para poder cerrar sesión.", "Aceptar");
+            return;
+        }
+
         bool salir = await DisplayAlertAsync("Cerrar sesión", "¿Deseas cerrar sesión?", "Sí", "No");
         if (!salir) return;
 
-        // Dejar de recibir solicitudes antes de salir
-        if (_enServicio && _conductorId is { } conductorId)
-        {
-            await SalirDeGrupoServicioAsync();
-            await _transporteService.DesactivarConductorAsync(conductorId);
-        }
-
+        await new UsuarioService().CerrarSesionAsync();
         Preferences.Clear();
         var app = Application.Current;
         if (app?.Windows?.Count > 0)

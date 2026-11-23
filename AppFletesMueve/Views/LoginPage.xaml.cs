@@ -18,10 +18,10 @@ public partial class LoginPage : ContentPage
 
     private async void Ingresar_Clicked(object? sender, EventArgs e)
     {
-        Usuario? usuario;
+        ResultadoLogin resultado;
         try
         {
-            usuario = await _usuarioService.Login(txtEmail.Text, txtPassword.Text);
+            resultado = await _usuarioService.Login(txtEmail.Text, txtPassword.Text);
         }
         catch (Exception ex)
         {
@@ -33,9 +33,32 @@ public partial class LoginPage : ContentPage
             return;
         }
 
+        if (resultado.RequiereConfirmacionSesion)
+        {
+            var continuar = await DisplayAlertAsync(
+                "Sesión activa",
+                "Este usuario ya tiene una sesión iniciada en otro dispositivo. Si continuás, se cerrará aquella sesión.",
+                "Continuar",
+                "Cancelar");
+            if (!continuar)
+                return;
+
+            try
+            {
+                resultado = await _usuarioService.Login(txtEmail.Text, txtPassword.Text, confirmarReemplazoSesion: true);
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlertAsync("Error de conexión", "No se pudo confirmar el inicio de sesión. Intentá de nuevo.", "Aceptar");
+                System.Diagnostics.Debug.WriteLine($"Error confirmando login: {ex}");
+                return;
+            }
+        }
+
+        var usuario = resultado.Usuario;
         if (usuario == null)
         {
-            await DisplayAlertAsync("Error", "Usuario o contraseña incorrectos", "Aceptar");
+            await DisplayAlertAsync("Error", "No se pudo iniciar sesión. Verificá tus datos e intentá de nuevo.", "Aceptar");
             return;
         }
 
