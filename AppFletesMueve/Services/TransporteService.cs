@@ -145,6 +145,19 @@ namespace AppFletesMueve.Services
             try { return await _httpClient.GetFromJsonAsync<SolicitudFleteDto?>(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}/activa"); }
             catch { return null; }
         }
+
+        public async Task<List<SolicitudFleteDto>> ObtenerHistorialClienteAsync(int clienteId)
+        {
+            try { return await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + $"SolicitudesFlete/cliente/{clienteId}") ?? new List<SolicitudFleteDto>(); }
+            catch { return new List<SolicitudFleteDto>(); }
+        }
+
+        public async Task<List<SolicitudFleteDto>> ObtenerHistorialConductorAsync(int conductorId)
+        {
+            try { return await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}") ?? new List<SolicitudFleteDto>(); }
+            catch { return new List<SolicitudFleteDto>(); }
+        }
+
         public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes(string? tipoVehiculo = null)
         {
             try

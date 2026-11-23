@@ -35,8 +35,7 @@ public class MenuConductorPage : MenuInferiorPage
     public MenuConductorPage(HomeConductor inicio)
     {
         Agregar(inicio, "Inicio", "ic_inicio.png");
-        Agregar(new SeccionEnConstruccionPage("Mis viajes",
-            "Acá vas a ver el historial de tus viajes y el estado de cada uno."), "Viajes", "ic_viajes.png");
+        Agregar(new ViajesPage(esConductor: true), "Viajes", "ic_viajes.png");
         Agregar(new SeccionEnConstruccionPage("Billetera",
             "Acá vas a ver tus ganancias, los cobros de cada viaje y vas a poder retirar tu saldo."), "Billetera", "ic_billetera.png");
         Agregar(new SeccionEnConstruccionPage("Promos",
@@ -50,8 +49,7 @@ public class MenuClientePage : MenuInferiorPage
     public MenuClientePage(HomeCliente inicio)
     {
         Agregar(inicio, "Inicio", "ic_inicio.png");
-        Agregar(new SeccionEnConstruccionPage("Mis viajes",
-            "Acá vas a ver el historial de tus fletes."), "Viajes", "ic_viajes.png");
+        Agregar(new ViajesPage(esConductor: false), "Viajes", "ic_viajes.png");
         Agregar(new SeccionEnConstruccionPage("Promos",
             "Acá vas a ver descuentos y promociones."), "Promos", "ic_promos.png");
         Agregar(new AyudaPage(), "Ayuda", "ic_ayuda.png");

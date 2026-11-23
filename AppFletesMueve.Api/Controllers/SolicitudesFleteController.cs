@@ -151,8 +151,38 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("cliente/{clienteId:int}")]
         public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPorCliente(int clienteId)
         {
+            if (!EsUsuarioActual(clienteId))
+                return Forbid();
+
             var ids = await _context.SolicitudesFlete
                 .Where(s => s.ClienteId == clienteId)
+                .OrderByDescending(s => s.FechaSolicitud)
+                .Select(s => s.SolicitudFleteId)
+                .ToListAsync();
+
+            var resultado = new List<SolicitudFleteDto>();
+            foreach (var id in ids)
+            {
+                var dto = await ObtenerDto(id);
+                if (dto is not null) resultado.Add(dto);
+            }
+            return Ok(resultado);
+        }
+
+        // Historial de un conductor. Solo puede consultarlo el usuario dueño del perfil.
+        [HttpGet("conductor/{conductorId:int}")]
+        public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPorConductor(int conductorId)
+        {
+            var conductor = await _context.Conductores
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.ConductorId == conductorId);
+            if (conductor is null)
+                return NotFound();
+            if (!EsUsuarioActual(conductor.UsuarioId))
+                return Forbid();
+
+            var ids = await _context.SolicitudesFlete
+                .Where(s => s.ConductorId == conductorId)
                 .OrderByDescending(s => s.FechaSolicitud)
                 .Select(s => s.SolicitudFleteId)
                 .ToListAsync();
@@ -437,5 +467,8 @@ namespace AppFletesMueve.Api.Controllers
                 }).ToList()
             };
         }
+
+        private bool EsUsuarioActual(int usuarioId) =>
+            int.TryParse(Request.Headers["X-Usuario-Id"].ToString(), out var actual) && actual == usuarioId;
     }
 }
