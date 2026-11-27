@@ -64,13 +64,28 @@
                 TextColor="Black"
                 PlaceholderColor="Gray"/>
 
-            <Entry
-                x:Name="txtPassword"
-                Placeholder="Contraseña"
-                IsPassword="True"
-                BackgroundColor="White"
-                TextColor="Black"
-                PlaceholderColor="Gray"/>
+            <Grid ColumnDefinitions="*,Auto">
+                <Entry
+                    x:Name="txtPassword"
+                    Grid.Column="0"
+                    Placeholder="Contraseña"
+                    IsPassword="True"
+                    BackgroundColor="White"
+                    TextColor="Black"
+                    PlaceholderColor="Gray"/>
+                <Button
+                    x:Name="btnMostrarPassword"
+                    Grid.Column="1"
+                    Text="👁"
+                    FontSize="20"
+                    WidthRequest="48"
+                    HeightRequest="48"
+                    Padding="0"
+                    BackgroundColor="Transparent"
+                    TextColor="#555555"
+                    SemanticProperties.Hint="Mostrar contraseña"
+                    Clicked="MostrarPassword_Clicked" />
+            </Grid>
 
             <Label
                 Text="¿Qué tipo de usuario sos?"

@@ -73,16 +73,35 @@ namespace AppFletesMueve.Services
                 if (response.IsSuccessStatusCode)
                     return (true, null);
 
-                // Devolver el mensaje de error del API si está presente
-                return (false, !string.IsNullOrWhiteSpace(contenido) ? contenido : "Error en la respuesta del servidor.");
+                if (!string.IsNullOrWhiteSpace(contenido))
+                {
+                    try
+                    {
+                        using var json = JsonDocument.Parse(contenido);
+                        if (json.RootElement.TryGetProperty("mensaje", out var mensaje))
+                            return (false, mensaje.GetString());
+                    }
+                    catch { }
+                }
+
+                return (false, "No se pudo crear la cuenta. Intentá de nuevo.");
+            }
+            catch (HttpRequestException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ERROR de red al registrar: {ex}");
+                return (false, "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.");
+            }
+            catch (TaskCanceledException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Tiempo de espera al registrar: {ex}");
+                return (false, "El servidor tardó demasiado en responder. Intentá nuevamente.");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(
                     $"ERROR API: {ex}");
 
-                // No propagar la excepción al UI. Devolver detalle del error para mostrarlo.
-                return (false, ex.Message);
+                return (false, "No se pudo crear la cuenta. Intentá de nuevo.");
             }
         }
 

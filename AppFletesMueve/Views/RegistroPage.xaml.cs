@@ -17,14 +17,28 @@ namespace AppFletesMueve.Views
 
         private async void CrearCuenta_Clicked(object? sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(txtNombre.Text) ||
+                string.IsNullOrWhiteSpace(txtApellido.Text) ||
+                string.IsNullOrWhiteSpace(txtDni.Text) ||
+                string.IsNullOrWhiteSpace(txtTelefono.Text) ||
+                string.IsNullOrWhiteSpace(txtEmail.Text) ||
+                string.IsNullOrWhiteSpace(txtPassword.Text) ||
+                pickerTipoUsuario.SelectedItem is null)
+            {
+                const string mensajeCampos = "Completá todos los campos para crear tu cuenta.";
+                await DisplayAlertAsync("MUEVE", mensajeCampos, "Aceptar");
+                lblMensaje.Text = mensajeCampos;
+                return;
+            }
+
             var usuario = new Usuario
             {
-                Nombre = txtNombre.Text.Trim(),
-                Apellido = txtApellido.Text.Trim(),
-                Dni = txtDni.Text.Trim(),
-                Telefono = txtTelefono.Text.Trim(),
-                Email = txtEmail.Text.Trim(),
-                Password = txtPassword.Text,
+                Nombre = txtNombre.Text?.Trim() ?? string.Empty,
+                Apellido = txtApellido.Text?.Trim() ?? string.Empty,
+                Dni = txtDni.Text?.Trim() ?? string.Empty,
+                Telefono = txtTelefono.Text?.Trim() ?? string.Empty,
+                Email = txtEmail.Text?.Trim() ?? string.Empty,
+                Password = txtPassword.Text ?? string.Empty,
                 TipoUsuario = pickerTipoUsuario.SelectedItem?.ToString() ?? ""
             };
 
@@ -55,6 +69,15 @@ namespace AppFletesMueve.Views
                     "Aceptar");
                 lblMensaje.Text = mensaje;
             }
+        }
+
+        private void MostrarPassword_Clicked(object? sender, EventArgs e)
+        {
+            txtPassword.IsPassword = !txtPassword.IsPassword;
+            btnMostrarPassword.Text = txtPassword.IsPassword ? "👁" : "🙈";
+            SemanticProperties.SetHint(btnMostrarPassword, txtPassword.IsPassword
+                ? "Mostrar contraseña"
+                : "Ocultar contraseña");
         }
     }
 }

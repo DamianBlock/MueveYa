@@ -102,4 +102,13 @@ public partial class LoginPage : ContentPage
     {
         await Navigation.PushAsync(new RegistroPage(_usuarioService));
     }
+
+    private void MostrarPassword_Clicked(object? sender, EventArgs e)
+    {
+        txtPassword.IsPassword = !txtPassword.IsPassword;
+        btnMostrarPassword.Text = txtPassword.IsPassword ? "👁" : "🙈";
+        SemanticProperties.SetHint(btnMostrarPassword, txtPassword.IsPassword
+            ? "Mostrar contraseña"
+            : "Ocultar contraseña");
+    }
 }
