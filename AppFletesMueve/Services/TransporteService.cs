@@ -49,6 +49,9 @@ namespace AppFletesMueve.Services
         public double LongitudDestino { get; set; }
         public double DistanciaKm { get; set; }
         public decimal Precio { get; set; }
+        public decimal PrecioCliente { get; set; }
+        public decimal DescuentoPromocional { get; set; }
+        public string? PromocionAplicada { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string TipoVehiculo { get; set; } = string.Empty;
         public string? ConductorNombre { get; set; }
@@ -93,6 +96,15 @@ namespace AppFletesMueve.Services
         public double VolumenTotalM3 { get; set; }
         public int MinutosEspera { get; set; }
         public List<OpcionTarifaDto> Opciones { get; set; } = new();
+    }
+
+    public class PromocionPrimerViajeDto
+    {
+        public bool Disponible { get; set; }
+        public decimal PorcentajeDescuento { get; set; }
+        public decimal TopeDescuento { get; set; }
+        public DateTime? VenceUtc { get; set; }
+        public string Mensaje { get; set; } = string.Empty;
     }
 
     public class TransporteService
@@ -156,6 +168,16 @@ namespace AppFletesMueve.Services
         {
             try { return await _httpClient.GetFromJsonAsync<List<SolicitudFleteDto>>(ApiUrl + $"SolicitudesFlete/conductor/{conductorId}") ?? new List<SolicitudFleteDto>(); }
             catch { return new List<SolicitudFleteDto>(); }
+        }
+
+        public async Task<PromocionPrimerViajeDto?> ObtenerPromocionPrimerViajeAsync(int clienteId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<PromocionPrimerViajeDto>(
+                    ApiUrl + $"Promociones/primer-viaje/{clienteId}");
+            }
+            catch { return null; }
         }
 
         public async Task<List<SolicitudFleteDto>> ObtenerSolicitudesPendientes(string? tipoVehiculo = null)

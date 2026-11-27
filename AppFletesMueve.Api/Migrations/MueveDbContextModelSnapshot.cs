@@ -156,6 +156,10 @@ namespace AppFletesMueve.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal>("DescuentoPromocional")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
                     b.Property<double>("DistanciaKm")
                         .HasColumnType("double precision");
 
@@ -200,6 +204,14 @@ namespace AppFletesMueve.Api.Migrations
                     b.Property<decimal>("Precio")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)");
+
+                    b.Property<decimal>("PrecioCliente")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<string>("PromocionAplicada")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("TipoServicio")
                         .IsRequired()
@@ -271,6 +283,9 @@ namespace AppFletesMueve.Api.Migrations
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("FechaRegistroUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Nombre")
                         .IsRequired()

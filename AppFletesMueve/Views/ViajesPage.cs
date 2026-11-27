@@ -69,10 +69,10 @@ public class ViajesPage : ContentPage
         }
 
         foreach (var viaje in viajes)
-            _lista.Add(CrearTarjeta(viaje));
+            _lista.Add(CrearTarjeta(viaje, _esConductor));
     }
 
-    private static Border CrearTarjeta(SolicitudFleteDto viaje)
+    private static Border CrearTarjeta(SolicitudFleteDto viaje, bool esConductor)
     {
         var colorEstado = viaje.Estado switch
         {
@@ -82,7 +82,8 @@ public class ViajesPage : ContentPage
         };
         var rol = viaje.ConductorNombre ?? "Esperando conductor";
         var fecha = viaje.FechaSolicitud.ToLocalTime().ToString("dd/MM/yyyy · HH:mm");
-        var precio = viaje.Precio.ToString("C0", CultureInfo.GetCultureInfo("es-AR"));
+        var importe = esConductor || viaje.PrecioCliente <= 0 ? viaje.Precio : viaje.PrecioCliente;
+        var precio = importe.ToString("C0", CultureInfo.GetCultureInfo("es-AR"));
 
         return new Border
         {

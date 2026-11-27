@@ -57,7 +57,7 @@ public class BilleteraPage : ContentPage
         }
 
         var completados = viajes.Where(v => v.Estado == "Completada").ToList();
-        var total = completados.Sum(v => v.Precio);
+        var total = completados.Sum(v => ImporteParaResumen(v));
         _contenido.Clear();
 
         _contenido.Add(CrearResumen(total, completados.Count));
@@ -130,7 +130,7 @@ public class BilleteraPage : ContentPage
         }, 0, 0);
         fila.Add(new Label
         {
-            Text = viaje.Precio.ToString("C0", MonedaArgentina),
+            Text = ImporteParaResumen(viaje).ToString("C0", MonedaArgentina),
             TextColor = Color.FromArgb("#2E7D32"),
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center
@@ -145,4 +145,7 @@ public class BilleteraPage : ContentPage
             Content = fila
         };
     }
+
+    private decimal ImporteParaResumen(SolicitudFleteDto viaje) =>
+        _esConductor || viaje.PrecioCliente <= 0 ? viaje.Precio : viaje.PrecioCliente;
 }

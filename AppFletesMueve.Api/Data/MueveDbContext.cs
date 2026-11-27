@@ -67,6 +67,9 @@ namespace AppFletesMueve.Api.Data
                 e.Property(s => s.TipoServicio).HasConversion<string>().HasMaxLength(20);
                 e.Property(s => s.Estado).HasConversion<string>().HasMaxLength(30);
                 e.Property(s => s.Precio).HasPrecision(12, 2);
+                e.Property(s => s.PrecioCliente).HasPrecision(12, 2);
+                e.Property(s => s.DescuentoPromocional).HasPrecision(12, 2);
+                e.Property(s => s.PromocionAplicada).HasMaxLength(50);
 
                 e.Property(s => s.TipoVehiculo)
                     .HasConversion<string>()

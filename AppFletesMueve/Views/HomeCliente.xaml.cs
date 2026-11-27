@@ -490,7 +490,12 @@ namespace AppFletesMueve.Views
                     await DisplayAlertAsync("MUEVE", "Primero indicá qué vas a trasladar.", "Aceptar");
                     return;
                 }
-                bool confirmar = await DisplayAlertAsync("Confirmar", $"Solicitar {vm.Nombre} por ${vm.Precio:0.00}?", "Sí", "No");
+                var promocion = await _transporteService.ObtenerPromocionPrimerViajeAsync(SesionUsuario.UsuarioId);
+                var detallePromocion = promocion?.Disponible == true
+                    ? $"\n\n¡Promo de bienvenida! {promocion.Mensaje}"
+                    : string.Empty;
+                bool confirmar = await DisplayAlertAsync("Confirmar",
+                    $"Tarifa para {vm.Nombre}: ${vm.Precio:N0}.{detallePromocion}\n\n¿Querés solicitarlo?", "Sí", "No");
                 if (!confirmar) return;
 
                 var origenLat = _ultimoOrigen?.Latitude ?? Preferences.Get("UltimaLat", 0.0);
@@ -515,7 +520,11 @@ namespace AppFletesMueve.Views
                     if (resultado != null)
                     {
                         _solicitudActivaId = resultado.SolicitudFleteId;
-                        await DisplayAlertAsync("MUEVE", $"Solicitud creada. Precio estimado: ${resultado.Precio:0.00}", "Aceptar");
+                        var precioCliente = resultado.PrecioCliente > 0 ? resultado.PrecioCliente : resultado.Precio;
+                        var mensaje = $"Solicitud creada. Importe a pagar: ${precioCliente:N0}.";
+                        if (resultado.DescuentoPromocional > 0)
+                            mensaje += $"\n\nPromo aplicada: ahorraste ${resultado.DescuentoPromocional:N0}.";
+                        await DisplayAlertAsync("MUEVE", mensaje, "Aceptar");
                         // Unirse al grupo de la solicitud para recibir actualizaciones del conductor
                         if (_hubCliente != null && _hubCliente.State == HubConnectionState.Connected)
                         {

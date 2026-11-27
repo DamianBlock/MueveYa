@@ -39,6 +39,12 @@ namespace AppFletesMueve.Api.Models
 
         public decimal Precio { get; set; }
 
+        // Precio es la tarifa íntegra que percibe el conductor. Los siguientes valores
+        // documentan el beneficio que MUEVE asume para el cliente.
+        public decimal PrecioCliente { get; set; }
+        public decimal DescuentoPromocional { get; set; }
+        public string? PromocionAplicada { get; set; }
+
         public EstadoSolicitud Estado { get; set; } = EstadoSolicitud.Pendiente;
 
         public ICollection<SolicitudCarga> Cargas { get; set; } = new List<SolicitudCarga>();
