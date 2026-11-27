@@ -30,6 +30,7 @@ builder.Services.AddSignalR()
     });
 
 builder.Services.AddScoped<ICalculadoraTarifas, CalculadoraTarifas>();      
+builder.Services.AddScoped<IPromocionesService, PromocionesService>();
 
 var app = builder.Build();
 

@@ -40,7 +40,8 @@ namespace AppFletesMueve.Api.Controllers
                 Telefono = request.Telefono.Trim(),
                 Email = email,
                 Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                TipoUsuario = request.TipoUsuario.Trim()
+                TipoUsuario = request.TipoUsuario.Trim(),
+                FechaRegistroUtc = DateTime.UtcNow
             };
 
             _context.Usuarios.Add(usuario);

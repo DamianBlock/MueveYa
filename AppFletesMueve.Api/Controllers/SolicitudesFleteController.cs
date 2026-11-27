@@ -17,15 +17,18 @@ namespace AppFletesMueve.Api.Controllers
         private readonly ICalculadoraTarifas _tarifas;
         private readonly IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> _hub;
         private readonly ILogger<SolicitudesFleteController> _logger;
+        private readonly IPromocionesService _promociones;
 
         public SolicitudesFleteController(MueveDbContext context, ICalculadoraTarifas tarifas,
             IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> hub,
-            ILogger<SolicitudesFleteController> logger)
+            ILogger<SolicitudesFleteController> logger,
+            IPromocionesService promociones)
         {
             _context = context;
             _tarifas = tarifas;
             _hub = hub;
             _logger = logger;
+            _promociones = promociones;
         }
 
         [HttpPost]
@@ -70,6 +73,8 @@ namespace AppFletesMueve.Api.Controllers
                 return BadRequest(new { mensaje = "La carga no entra en el vehículo elegido" });
 
             var precio = _tarifas.Calcular(dto.DistanciaKm, pesoTotal, dto.TipoServicio, dto.TipoVehiculo);
+            var promocion = await _promociones.ObtenerPrimerViajeAsync(cliente);
+            var descuento = promocion.Disponible ? _promociones.CalcularDescuentoPrimerViaje(precio) : 0m;
 
             var solicitud = new SolicitudFlete
             {
@@ -84,6 +89,9 @@ namespace AppFletesMueve.Api.Controllers
                 LongitudDestino = dto.LongitudDestino,
                 DistanciaKm = dto.DistanciaKm,
                 Precio = precio,
+                PrecioCliente = precio - descuento,
+                DescuentoPromocional = descuento,
+                PromocionAplicada = descuento > 0 ? "PRIMER_FLETE_50" : null,
                 Estado = EstadoSolicitud.Pendiente,
                 Cargas = cargas,
                 TipoVehiculo = dto.TipoVehiculo,
@@ -449,6 +457,9 @@ namespace AppFletesMueve.Api.Controllers
                 LongitudDestino = s.LongitudDestino,
                 DistanciaKm = s.DistanciaKm,
                 Precio = s.Precio,
+                PrecioCliente = s.PrecioCliente,
+                DescuentoPromocional = s.DescuentoPromocional,
+                PromocionAplicada = s.PromocionAplicada,
                 Estado = s.Estado,
                 TipoVehiculo = s.TipoVehiculo,
                 LlegadaOrigenUtc = s.LlegadaOrigenUtc,

@@ -299,7 +299,8 @@ public partial class ViajeClientePage : ContentPage
     {
         lblOrigen.Text = s.DireccionOrigen;
         lblDestino.Text = s.DireccionDestino;
-        lblPrecio.Text = $"$ {s.Precio:N0}";
+        var precioCliente = s.PrecioCliente > 0 ? s.PrecioCliente : s.Precio;
+        lblPrecio.Text = $"$ {precioCliente:N0}";
 
         DibujarRuta(s);
 
