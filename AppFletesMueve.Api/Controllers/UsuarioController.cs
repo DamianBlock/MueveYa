@@ -3,6 +3,7 @@ using AppFletesMueve.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using AppFletesMueve.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -18,14 +19,39 @@ namespace AppFletesMueve.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Registrar([FromBody] Usuario usuario)
+        public async Task<IActionResult> Registrar([FromBody] RegistroUsuarioRequest request)
         {
-            usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
-            usuario.TokenSesionHash = null;
-            usuario.SesionIniciadaUtc = null;
+            var error = ValidarRegistro(request);
+            if (error != null)
+                return BadRequest(new { mensaje = error });
+
+            var email = request.Email.Trim().ToLowerInvariant();
+            var existeEmail = await _context.Usuarios
+                .AsNoTracking()
+                .AnyAsync(u => u.Email.ToLower() == email);
+            if (existeEmail)
+                return Conflict(new { mensaje = "Ya existe una cuenta registrada con ese correo electrónico." });
+
+            var usuario = new Usuario
+            {
+                Nombre = request.Nombre.Trim(),
+                Apellido = request.Apellido.Trim(),
+                Dni = request.Dni.Trim(),
+                Telefono = request.Telefono.Trim(),
+                Email = email,
+                Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                TipoUsuario = request.TipoUsuario.Trim()
+            };
 
             _context.Usuarios.Add(usuario);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { mensaje = "No se pudo crear la cuenta. Verificá que los datos no estén repetidos." });
+            }
 
             return Ok(UsuarioDto.FromEntity(usuario));
         }
@@ -99,6 +125,29 @@ namespace AppFletesMueve.Api.Controllers
             }
 
             return NoContent();
+        }
+
+        private static string? ValidarRegistro(RegistroUsuarioRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Nombre) ||
+                string.IsNullOrWhiteSpace(request.Apellido) ||
+                string.IsNullOrWhiteSpace(request.Dni) ||
+                string.IsNullOrWhiteSpace(request.Telefono) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.TipoUsuario))
+                return "Completá todos los campos para crear tu cuenta.";
+
+            if (!new EmailAddressAttribute().IsValid(request.Email))
+                return "Ingresá un correo electrónico válido.";
+
+            if (request.Password.Length < 6 || request.Password.Length > 72)
+                return "La contraseña debe tener entre 6 y 72 caracteres.";
+
+            if (request.TipoUsuario is not "CLIENTE" and not "CONDUCTOR")
+                return "Seleccioná si vas a usar MUEVE como cliente o conductor.";
+
+            return null;
         }
     }
 }
