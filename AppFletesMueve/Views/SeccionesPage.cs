@@ -98,6 +98,12 @@ public class AyudaPage : ContentPage
         var btnCorreo = Boton("Enviar un correo", Colors.White, Color.FromArgb("#E65100"), Color.FromArgb("#E65100"));
         btnCorreo.Clicked += async (_, _) =>
             await AbrirAsync($"mailto:{CorreoSoporte}?subject={Uri.EscapeDataString("Ayuda con MUEVE")}");
+        var btnPrivacidad = Boton("Política de privacidad", Colors.White, Color.FromArgb("#E65100"), Color.FromArgb("#E65100"));
+        btnPrivacidad.Clicked += async (_, _) => await Navigation.PushAsync(new LegalPage(privacidad: true));
+        var btnTerminos = Boton("Términos de uso", Colors.White, Color.FromArgb("#E65100"), Color.FromArgb("#E65100"));
+        btnTerminos.Clicked += async (_, _) => await Navigation.PushAsync(new LegalPage(privacidad: false));
+        var btnEliminar = Boton("Solicitar eliminación de cuenta", Colors.White, Color.FromArgb("#C62828"), Color.FromArgb("#C62828"));
+        btnEliminar.Clicked += SolicitarEliminacionAsync;
 
         var contenido = new VerticalStackLayout
         {
@@ -120,6 +126,9 @@ public class AyudaPage : ContentPage
                 },
                 btnWhatsApp,
                 btnCorreo,
+                btnPrivacidad,
+                btnTerminos,
+                btnEliminar,
                 new Label
                 {
                     Text = "Preguntas frecuentes",
@@ -213,5 +222,14 @@ public class AyudaPage : ContentPage
         {
             await DisplayAlertAsync("Ayuda", "No se pudo abrir la aplicación. Probá escribirnos por otro medio.", "Aceptar");
         }
+    }
+
+    private async void SolicitarEliminacionAsync(object? sender, EventArgs e)
+    {
+        var confirmar = await DisplayAlertAsync("Eliminar cuenta", "La solicitud será revisada por soporte. Los datos pueden conservarse temporalmente por reclamos u obligaciones legales. ¿Querés continuar?", "Solicitar", "Cancelar");
+        if (!confirmar) return;
+
+        var resultado = await new AppFletesMueve.Services.UsuarioService().SolicitarEliminacionAsync();
+        await DisplayAlertAsync("MUEVE", resultado.Mensaje, "Aceptar");
     }
 }
