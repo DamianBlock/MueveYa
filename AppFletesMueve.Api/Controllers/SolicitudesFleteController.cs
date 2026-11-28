@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using AppFletesMueve.Api.Middleware;
+using System.Security.Cryptography;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -14,6 +15,8 @@ namespace AppFletesMueve.Api.Controllers
     [Route("api/[controller]")]
     public class SolicitudesFleteController : ControllerBase
     {
+        private const double RadioLlegadaOrigenMetros = 100;
+        private const int MaximosIntentosPinSeguridad = 4;
         private readonly MueveDbContext _context;
         private readonly ICalculadoraTarifas _tarifas;
         private readonly IHubContext<AppFletesMueve.Api.Hubs.SolicitudesHub> _hub;
@@ -82,6 +85,7 @@ namespace AppFletesMueve.Api.Controllers
             var promocion = await _promociones.ObtenerPrimerViajeAsync(cliente);
             var descuento = promocion.Disponible ? _promociones.CalcularDescuentoPrimerViaje(precio) : 0m;
 
+            var pinSeguridad = RandomNumberGenerator.GetInt32(0, 1000).ToString("D3");
             var solicitud = new SolicitudFlete
             {
                 ClienteId = dto.ClienteId,
@@ -101,6 +105,7 @@ namespace AppFletesMueve.Api.Controllers
                 Estado = EstadoSolicitud.Pendiente,
                 Cargas = cargas,
                 TipoVehiculo = dto.TipoVehiculo,
+                PinSeguridadHash = BCrypt.Net.BCrypt.HashPassword(pinSeguridad),
             };
 
             _context.SolicitudesFlete.Add(solicitud);
@@ -125,6 +130,9 @@ namespace AppFletesMueve.Api.Controllers
             {
                 _logger.LogWarning(ex, "No se pudo notificar nueva solicitud por SignalR");
             }
+
+            // El PIN solo se entrega por HTTPS a quien creó el viaje; nunca por SignalR.
+            resultado!.PinSeguridad = pinSeguridad;
 
             return CreatedAtAction(nameof(ObtenerPorId),
                 new { id = solicitud.SolicitudFleteId }, resultado);
@@ -297,9 +305,62 @@ namespace AppFletesMueve.Api.Controllers
 
         // Aceptada -> EnOrigen: el conductor llegó a donde está la carga (empieza la espera de carga)
         [HttpPut("{id:int}/llegue-origen")]
-        public Task<ActionResult<SolicitudFleteDto>> LlegueOrigen(int id) =>
-            AvanzarEtapa(id, EstadoSolicitud.Aceptada, EstadoSolicitud.EnOrigen,
+        public async Task<ActionResult<SolicitudFleteDto>> LlegueOrigen(int id, ConfirmarLlegadaDto dto)
+        {
+            var solicitud = await _context.SolicitudesFlete.FindAsync(id);
+            if (solicitud is null)
+                return NotFound();
+            if (!await EsConductorActualAsync(solicitud.ConductorId))
+                return Forbid();
+            if (solicitud.Estado != EstadoSolicitud.Aceptada)
+                return Conflict(new { mensaje = "El viaje no está en la etapa esperada. Actualizá la pantalla." });
+
+            var conductor = solicitud.ConductorId is int conductorId
+                ? await _context.Conductores.FindAsync(conductorId)
+                : null;
+
+            // Las coordenadas predeterminadas (0, 0) indican que aún no llegó una
+            // ubicación válida desde la aplicación del conductor.
+            if (conductor is null || (conductor.Latitud == 0 && conductor.Longitud == 0))
+                return Conflict(new { mensaje = "No pudimos confirmar tu ubicación. Activá el GPS e intentá de nuevo." });
+
+            var distanciaMetros = DistanciaEnMetros(
+                conductor.Latitud, conductor.Longitud,
+                solicitud.LatitudOrigen, solicitud.LongitudOrigen);
+
+            if (distanciaMetros > RadioLlegadaOrigenMetros)
+                return Conflict(new
+                {
+                    mensaje = $"Todavía no llegaste al punto de recogida. Estás a {Math.Ceiling(distanciaMetros):N0} m.",
+                    distanciaMetros = Math.Ceiling(distanciaMetros)
+                });
+
+            if (solicitud.PinSeguridadBloqueadoUtc.HasValue)
+                return Conflict(new { mensaje = "El PIN de seguridad fue bloqueado por demasiados intentos. El cliente debe cancelar y crear una nueva solicitud." });
+
+            var pin = dto.PinSeguridad?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(solicitud.PinSeguridadHash) ||
+                !BCrypt.Net.BCrypt.Verify(pin, solicitud.PinSeguridadHash))
+            {
+                solicitud.IntentosPinSeguridad++;
+                var restantes = MaximosIntentosPinSeguridad - solicitud.IntentosPinSeguridad;
+                if (restantes <= 0)
+                {
+                    solicitud.PinSeguridadBloqueadoUtc = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    return Conflict(new { mensaje = "PIN incorrecto. Alcanzaste el máximo de 4 intentos; el PIN quedó bloqueado." });
+                }
+
+                await _context.SaveChangesAsync();
+                return Conflict(new { mensaje = $"PIN incorrecto. Te quedan {restantes} intento{(restantes == 1 ? string.Empty : "s")}." });
+            }
+
+            solicitud.PinSeguridadValidado = true;
+            await _context.SaveChangesAsync();
+
+            return await AvanzarEtapa(id, EstadoSolicitud.Aceptada, EstadoSolicitud.EnOrigen,
                 s => s.LlegadaOrigenUtc = DateTime.UtcNow);
+        }
 
         // EnOrigen -> EnCurso: terminó la carga y sale hacia el destino
         [HttpPut("{id:int}/iniciar")]
@@ -445,6 +506,19 @@ namespace AppFletesMueve.Api.Controllers
             return Ok(resultadoDto);
         }
 
+        private static double DistanciaEnMetros(double latitud1, double longitud1, double latitud2, double longitud2)
+        {
+            const double radioTierraMetros = 6_371_000;
+            var dLatitud = GradosARadianes(latitud2 - latitud1);
+            var dLongitud = GradosARadianes(longitud2 - longitud1);
+            var a = Math.Pow(Math.Sin(dLatitud / 2), 2)
+                    + Math.Cos(GradosARadianes(latitud1)) * Math.Cos(GradosARadianes(latitud2))
+                    * Math.Pow(Math.Sin(dLongitud / 2), 2);
+            return radioTierraMetros * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        }
+
+        private static double GradosARadianes(double grados) => grados * Math.PI / 180;
+
         private async Task<SolicitudFleteDto?> ObtenerDto(int id)
         {
             var s = await _context.SolicitudesFlete
@@ -489,6 +563,7 @@ namespace AppFletesMueve.Api.Controllers
                 LlegadaOrigenUtc = s.LlegadaOrigenUtc,
                 InicioViajeUtc = s.InicioViajeUtc,
                 LlegadaDestinoUtc = s.LlegadaDestinoUtc,
+                PinSeguridadValidado = s.PinSeguridadValidado,
                 AhoraUtc = DateTime.UtcNow,
                 MinutosEsperaCarga = _tarifas.MinutosEsperaCarga,
                 MinutosEsperaDescarga = _tarifas.MinutosEsperaDescarga,

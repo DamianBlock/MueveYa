@@ -301,6 +301,7 @@ public partial class ViajeClientePage : ContentPage
         lblDestino.Text = s.DireccionDestino;
         var precioCliente = s.PrecioCliente > 0 ? s.PrecioCliente : s.Precio;
         lblPrecio.Text = $"$ {precioCliente:N0}";
+        ActualizarPinSeguridad(s);
 
         DibujarRuta(s);
 
@@ -372,6 +373,22 @@ public partial class ViajeClientePage : ContentPage
         }
 
         ActualizarContador();
+    }
+
+    private void ActualizarPinSeguridad(SolicitudFleteDto solicitud)
+    {
+        var clave = TransporteService.ClavePinSeguridad(solicitud.ClienteId, solicitud.SolicitudFleteId);
+        if (solicitud.PinSeguridadValidado || solicitud.Estado is "Cancelada" or "Completada")
+        {
+            Preferences.Remove(clave);
+            panelPinSeguridad.IsVisible = false;
+            return;
+        }
+
+        var pin = Preferences.Get(clave, string.Empty);
+        panelPinSeguridad.IsVisible = solicitud.Estado == "Aceptada" && pin.Length == 3;
+        if (panelPinSeguridad.IsVisible)
+            lblPinSeguridad.Text = pin;
     }
 
     private void MostrarConductor(SolicitudFleteDto s)

@@ -70,6 +70,8 @@ namespace AppFletesMueve.Api.Data
                 e.Property(s => s.PrecioCliente).HasPrecision(12, 2);
                 e.Property(s => s.DescuentoPromocional).HasPrecision(12, 2);
                 e.Property(s => s.PromocionAplicada).HasMaxLength(50);
+                e.Property(s => s.IntentosPinSeguridad).HasDefaultValue(0);
+                e.Property(s => s.PinSeguridadValidado).HasDefaultValue(false);
 
                 e.Property(s => s.TipoVehiculo)
                     .HasConversion<string>()

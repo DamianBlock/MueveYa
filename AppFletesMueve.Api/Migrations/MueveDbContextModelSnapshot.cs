@@ -201,6 +201,22 @@ namespace AppFletesMueve.Api.Migrations
                     b.Property<string>("MotivoCancelacion")
                         .HasColumnType("text");
 
+                    b.Property<int>("IntentosPinSeguridad")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("PinSeguridadBloqueadoUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PinSeguridadHash")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PinSeguridadValidado")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<decimal>("Precio")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)");

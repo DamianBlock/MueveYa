@@ -929,7 +929,7 @@ public partial class HomeConductor : ContentPage
 
                 try
                 {
-                    await Task.Delay(5000, token);
+                    await Task.Delay(3000, token);
                 }
                 catch (TaskCanceledException)
                 {
@@ -1050,11 +1050,25 @@ public partial class HomeConductor : ContentPage
     private async Task AvanzarViajeAsync(SolicitudFleteDto viaje)
     {
         SolicitudFleteDto? actualizado;
+        string? mensajeError = null;
 
         switch (viaje.Estado)
         {
             case "Aceptada":
-                actualizado = await _transporteService.LlegueAlOrigenAsync(viaje.SolicitudFleteId);
+                var pinSeguridad = await DisplayPromptAsync(
+                    "Confirmar llegada",
+                    "Pedile al cliente el PIN de seguridad de 3 dígitos.",
+                    "Confirmar",
+                    "Cancelar",
+                    placeholder: "000",
+                    maxLength: 3,
+                    keyboard: Keyboard.Numeric);
+                if (pinSeguridad == null)
+                    return;
+
+                var llegada = await _transporteService.LlegueAlOrigenAsync(viaje.SolicitudFleteId, pinSeguridad);
+                actualizado = llegada.Solicitud;
+                mensajeError = llegada.Mensaje;
                 break;
 
             case "EnOrigen":
@@ -1089,7 +1103,7 @@ public partial class HomeConductor : ContentPage
             await SincronizarAsync();
 
             if (_solicitudEnCurso?.SolicitudFleteId == viaje.SolicitudFleteId && _solicitudEnCurso.Estado == viaje.Estado)
-                await DisplayAlertAsync("MUEVE", "No se pudo actualizar el viaje. Revisá tu conexión.", "Aceptar");
+                await DisplayAlertAsync("MUEVE", mensajeError ?? "No se pudo actualizar el viaje. Revisá tu conexión.", "Aceptar");
 
             return;
         }        

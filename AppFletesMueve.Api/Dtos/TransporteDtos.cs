@@ -182,6 +182,9 @@ namespace AppFletesMueve.Api.Dtos
         public DateTime? LlegadaOrigenUtc { get; set; }
         public DateTime? InicioViajeUtc { get; set; }
         public DateTime? LlegadaDestinoUtc { get; set; }
+        // Solo se completa en la respuesta inmediata de creación para el cliente.
+        public string? PinSeguridad { get; set; }
+        public bool PinSeguridadValidado { get; set; }
         public DateTime AhoraUtc { get; set; }
         public int MinutosEsperaCarga { get; set; }
         public int MinutosEsperaDescarga { get; set; }
@@ -195,6 +198,12 @@ namespace AppFletesMueve.Api.Dtos
 
         [Required, StringLength(200, MinimumLength = 3)]
         public string Motivo { get; set; } = string.Empty;
+    }
+
+    public class ConfirmarLlegadaDto
+    {
+        [Required, RegularExpression("^\\d{3}$", ErrorMessage = "Ingresá el PIN de 3 dígitos.")]
+        public string PinSeguridad { get; set; } = string.Empty;
     }
     public class CotizarTarifaDto
     {

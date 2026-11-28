@@ -56,6 +56,27 @@
                     <Label x:Name="lblDetalle"
                            FontSize="13"
                            TextColor="#757575"/>
+
+                    <Border x:Name="panelPinSeguridad"
+                            IsVisible="False"
+                            BackgroundColor="#FFF3E0"
+                            Stroke="#E65100"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="PIN de seguridad"
+                                   FontAttributes="Bold"
+                                   TextColor="#E65100"/>
+                            <Label x:Name="lblPinSeguridad"
+                                   FontSize="26"
+                                   FontAttributes="Bold"
+                                   CharacterSpacing="6"
+                                   TextColor="#212121"/>
+                            <Label Text="Compartilo con el conductor cuando llegue al origen."
+                                   FontSize="12"
+                                   TextColor="#757575"/>
+                        </VerticalStackLayout>
+                    </Border>
                     
                     <Label x:Name="lblContador"
                            FontSize="18"
