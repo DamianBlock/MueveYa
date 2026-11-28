@@ -11,10 +11,30 @@
 
         <!-- BARRA SUPERIOR (con Cerrar sesión) -->
         <Grid Grid.Row="0" BackgroundColor="#E65100" Padding="15,10" ColumnDefinitions="*,Auto">
-            <Image Grid.Column="0"
-                   Source="logo_mueve.png"
-                   HeightRequest="40"
-                   HorizontalOptions="Start"/>
+            <HorizontalStackLayout Grid.Column="0"
+                                   Spacing="7"
+                                   HorizontalOptions="Start"
+                                   VerticalOptions="Center">
+                <Border BackgroundColor="White"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 9"
+                        HeightRequest="29"
+                        WidthRequest="29"
+                        Padding="0">
+                    <Label Text="↗"
+                           FontSize="21"
+                           FontAttributes="Bold"
+                           TextColor="#E65100"
+                           HorizontalTextAlignment="Center"
+                           VerticalTextAlignment="Center"/>
+                </Border>
+                <Label Text="MUEVE"
+                       FontSize="23"
+                       FontAttributes="Bold"
+                       CharacterSpacing="0.04"
+                       TextColor="White"
+                       VerticalOptions="Center"/>
+            </HorizontalStackLayout>
 
             <Label Grid.Column="1"
                    Text="Cerrar sesión"
