@@ -61,6 +61,8 @@ namespace AppFletesMueve.Services
         public DateTime? LlegadaOrigenUtc { get; set; }
         public DateTime? InicioViajeUtc { get; set; }
         public DateTime? LlegadaDestinoUtc { get; set; }
+        public string? PinSeguridad { get; set; }
+        public bool PinSeguridadValidado { get; set; }
         public DateTime AhoraUtc { get; set; }
         public int MinutosEsperaCarga { get; set; }
         public int MinutosEsperaDescarga { get; set; }
@@ -260,7 +262,12 @@ namespace AppFletesMueve.Services
                 if (!response.IsSuccessStatusCode) return null;
 
                 var dto = await response.Content.ReadFromJsonAsync<SolicitudFleteDto>();
-                if (dto != null) SolicitudCreada?.Invoke(dto);
+                if (dto != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(dto.PinSeguridad))
+                        Preferences.Set(ClavePinSeguridad(dto.ClienteId, dto.SolicitudFleteId), dto.PinSeguridad);
+                    SolicitudCreada?.Invoke(dto);
+                }
                 return dto;
             }
             catch (Exception ex)
@@ -447,7 +454,26 @@ namespace AppFletesMueve.Services
             catch { return null; }
         }
 
-        public Task<SolicitudFleteDto?> LlegueAlOrigenAsync(int solicitudId) => AvanzarEtapaAsync(solicitudId, "llegue-origen");
+        public async Task<(SolicitudFleteDto? Solicitud, string? Mensaje)> LlegueAlOrigenAsync(int solicitudId, string pinSeguridad)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync(
+                    ApiUrl + $"SolicitudesFlete/{solicitudId}/llegue-origen",
+                    new { PinSeguridad = pinSeguridad });
+                if (!response.IsSuccessStatusCode)
+                    return (null, await LeerMensajeError(response));
+
+                return (await response.Content.ReadFromJsonAsync<SolicitudFleteDto>(), null);
+            }
+            catch
+            {
+                return (null, "No se pudo conectar con el servidor.");
+            }
+        }
+
+        public static string ClavePinSeguridad(int clienteId, int solicitudId) =>
+            $"PinSeguridad-{clienteId}-{solicitudId}";
 
         public Task<SolicitudFleteDto?> IniciarViajeAsync(int solicitudId) => AvanzarEtapaAsync(solicitudId, "iniciar");
 

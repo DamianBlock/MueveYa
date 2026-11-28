@@ -52,6 +52,11 @@ namespace AppFletesMueve.Api.Models
         public DateTime? LlegadaOrigenUtc { get; set; }
         public DateTime? InicioViajeUtc { get; set; }
         public DateTime? LlegadaDestinoUtc { get; set; }
+        // El código nunca se guarda en claro: solo se conserva su hash para validarlo.
+        public string? PinSeguridadHash { get; set; }
+        public int IntentosPinSeguridad { get; set; }
+        public bool PinSeguridadValidado { get; set; }
+        public DateTime? PinSeguridadBloqueadoUtc { get; set; }
         public DateTime? FinalizadoUtc { get; set; }
         public string? CanceladaPor { get; set; }
         public string? MotivoCancelacion { get; set; }

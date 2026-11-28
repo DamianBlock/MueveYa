@@ -20,8 +20,31 @@ public class SolicitudesHub : Hub
     // Método que puede ser invocado por un conductor para enviar su ubicación
     public async Task ActualizarUbicacion(int solicitudId, double lat, double lon)
     {
+        if (double.IsNaN(lat) || double.IsNaN(lon) ||
+            double.IsInfinity(lat) || double.IsInfinity(lon) ||
+            lat is < -90 or > 90 || lon is < -180 or > 180)
+            throw new HubException("La ubicación enviada no es válida.");
+
         if (!await EsConductorDelViajeAsync(solicitudId))
             throw new HubException("No estás autorizado para actualizar esta ubicación.");
+
+        // Persistir la última posición permite verificar en la API que el conductor
+        // realmente llegó al punto de recogida antes de iniciar la carga.
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppFletesMueve.Api.Data.MueveDbContext>();
+            var conductor = await db.SolicitudesFlete
+                .Where(s => s.SolicitudFleteId == solicitudId)
+                .Select(s => s.Conductor)
+                .FirstOrDefaultAsync();
+
+            if (conductor is null)
+                throw new HubException("No se encontró el conductor del viaje.");
+
+            conductor.Latitud = lat;
+            conductor.Longitud = lon;
+            await db.SaveChangesAsync();
+        }
 
         // Enviar la ubicación solamente al grupo de la solicitud
         var groupName = $"solicitud-{solicitudId}";
