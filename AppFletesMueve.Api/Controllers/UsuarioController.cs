@@ -5,6 +5,8 @@ using AppFletesMueve.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Cryptography;
+using AppFletesMueve.Api.Services;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -13,10 +15,17 @@ namespace AppFletesMueve.Api.Controllers
     public class UsuarioController : ControllerBase
     {
         private readonly MueveDbContext _context;
+        private readonly IEmailSender _emailSender;
+        private readonly ILogger<UsuarioController> _logger;
 
-        public UsuarioController(MueveDbContext context)
+        public UsuarioController(
+            MueveDbContext context,
+            IEmailSender emailSender,
+            ILogger<UsuarioController> logger)
         {
             _context = context;
+            _emailSender = emailSender;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -131,6 +140,77 @@ namespace AppFletesMueve.Api.Controllers
             return NoContent();
         }
 
+        [HttpPost("recuperar-password")]
+        [EnableRateLimiting("recuperacion-solicitud")]
+        public async Task<IActionResult> SolicitarRecuperacion([FromBody] RecuperacionPasswordRequest request)
+        {
+            // La respuesta es intencionalmente idéntica para no revelar qué correos tienen cuenta.
+            const string mensaje = "Si existe una cuenta con ese correo, enviamos un código de recuperación.";
+            if (string.IsNullOrWhiteSpace(request.Email) || !new EmailAddressAttribute().IsValid(request.Email))
+                return Accepted(new { mensaje });
+
+            var email = request.Email.Trim().ToLowerInvariant();
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
+            if (usuario == null)
+                return Accepted(new { mensaje });
+
+            var codigo = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+            usuario.CodigoRecuperacionHash = SesionTokens.Hash(codigo);
+            usuario.CodigoRecuperacionVenceUtc = DateTime.UtcNow.AddMinutes(15);
+            usuario.IntentosCodigoRecuperacion = 0;
+            await _context.SaveChangesAsync();
+
+            var enviado = await _emailSender.EnviarCodigoRecuperacionAsync(usuario.Email, codigo);
+            if (!enviado)
+                _logger.LogWarning("No se pudo entregar el código de recuperación para una cuenta.");
+
+            return Accepted(new { mensaje });
+        }
+
+        [HttpPost("restablecer-password")]
+        [EnableRateLimiting("recuperacion-confirmacion")]
+        public async Task<IActionResult> RestablecerPassword([FromBody] RestablecerPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Codigo) ||
+                string.IsNullOrWhiteSpace(request.PasswordNueva) ||
+                !new EmailAddressAttribute().IsValid(request.Email) ||
+                request.Codigo.Length != 6 || !request.Codigo.All(char.IsAsciiDigit) ||
+                request.PasswordNueva.Length < 6 || request.PasswordNueva.Length > 72)
+            {
+                return BadRequest(new { mensaje = "Verificá el código y usá una contraseña de entre 6 y 72 caracteres." });
+            }
+
+            var email = request.Email.Trim().ToLowerInvariant();
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
+            var ahora = DateTime.UtcNow;
+
+            if (usuario == null ||
+                string.IsNullOrEmpty(usuario.CodigoRecuperacionHash) ||
+                usuario.CodigoRecuperacionVenceUtc <= ahora ||
+                usuario.IntentosCodigoRecuperacion >= 5 ||
+                !SesionTokens.Coinciden(usuario.CodigoRecuperacionHash, SesionTokens.Hash(request.Codigo)))
+            {
+                if (usuario != null && usuario.CodigoRecuperacionHash != null)
+                {
+                    usuario.IntentosCodigoRecuperacion++;
+                    if (usuario.IntentosCodigoRecuperacion >= 5 || usuario.CodigoRecuperacionVenceUtc <= ahora)
+                        LimpiarCodigoRecuperacion(usuario);
+                    await _context.SaveChangesAsync();
+                }
+
+                return BadRequest(new { mensaje = "El código es inválido, venció o superó el máximo de intentos." });
+            }
+
+            usuario.Password = BCrypt.Net.BCrypt.HashPassword(request.PasswordNueva);
+            usuario.TokenSesionHash = null;
+            usuario.SesionIniciadaUtc = null;
+            LimpiarCodigoRecuperacion(usuario);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         private static string? ValidarRegistro(RegistroUsuarioRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Nombre) ||
@@ -152,6 +232,13 @@ namespace AppFletesMueve.Api.Controllers
                 return "Seleccioná si vas a usar MUEVE como cliente o conductor.";
 
             return null;
+        }
+
+        private static void LimpiarCodigoRecuperacion(Usuario usuario)
+        {
+            usuario.CodigoRecuperacionHash = null;
+            usuario.CodigoRecuperacionVenceUtc = null;
+            usuario.IntentosCodigoRecuperacion = 0;
         }
     }
 }

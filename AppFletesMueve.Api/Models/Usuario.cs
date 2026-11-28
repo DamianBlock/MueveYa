@@ -23,5 +23,10 @@
         public string? TokenSesionHash { get; set; }
         public DateTime? SesionIniciadaUtc { get; set; }
         public string? TokenSesion { get; set; }
+
+        // El código nunca se persiste en texto plano. Sólo existe durante 15 minutos.
+        public string? CodigoRecuperacionHash { get; set; }
+        public DateTime? CodigoRecuperacionVenceUtc { get; set; }
+        public int IntentosCodigoRecuperacion { get; set; }
     }
 }

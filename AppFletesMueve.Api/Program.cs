@@ -38,6 +38,12 @@ builder.Services.AddHttpClient("GooglePlaces", client =>
     client.BaseAddress = new Uri("https://places.googleapis.com/v1/");
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient("Brevo", client =>
+{
+    client.BaseAddress = new Uri("https://api.brevo.com/v3/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddSingleton<IEmailSender, BrevoEmailSender>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -50,6 +56,16 @@ builder.Services.AddRateLimiter(options =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 4, Window = TimeSpan.FromHours(1), QueueLimit = 0
+        }));
+    options.AddPolicy("recuperacion-solicitud", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 3, Window = TimeSpan.FromHours(1), QueueLimit = 0
+        }));
+    options.AddPolicy("recuperacion-confirmacion", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 8, Window = TimeSpan.FromMinutes(10), QueueLimit = 0
         }));
 });
 
