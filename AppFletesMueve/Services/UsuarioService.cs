@@ -17,6 +17,22 @@ namespace AppFletesMueve.Services
             try { await _httpClient.PostAsync(_apiUrl + "Usuario/logout", null); }
             catch { }
         }
+        public async Task<(bool Ok, string Mensaje)> SolicitarEliminacionAsync()
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync(_apiUrl + "Usuario/solicitar-eliminacion", null);
+                var contenido = await response.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(contenido))
+                {
+                    using var json = JsonDocument.Parse(contenido);
+                    if (json.RootElement.TryGetProperty("mensaje", out var mensaje))
+                        return (response.IsSuccessStatusCode, mensaje.GetString() ?? "No se pudo procesar la solicitud.");
+                }
+                return (response.IsSuccessStatusCode, response.IsSuccessStatusCode ? "Solicitud registrada." : "No se pudo procesar la solicitud.");
+            }
+            catch { return (false, "No se pudo conectar con el servidor."); }
+        }
         public UsuarioService()
         {
             _httpClient = ApiHttp.CrearCliente();

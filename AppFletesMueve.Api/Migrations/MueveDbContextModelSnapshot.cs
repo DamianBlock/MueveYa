@@ -307,6 +307,9 @@ namespace AppFletesMueve.Api.Migrations
                     b.Property<DateTime?>("SesionIniciadaUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("SolicitudEliminacionUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasColumnType("text");

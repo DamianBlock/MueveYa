@@ -211,6 +211,27 @@ namespace AppFletesMueve.Api.Controllers
             return NoContent();
         }
 
+        [HttpPost("solicitar-eliminacion")]
+        public async Task<IActionResult> SolicitarEliminacion()
+        {
+            var token = Request.Headers["X-Sesion"].ToString();
+            if (!int.TryParse(Request.Headers["X-Usuario-Id"].ToString(), out var usuarioId) || string.IsNullOrWhiteSpace(token))
+                return Unauthorized(new { mensaje = "Necesitás una sesión válida para solicitar la eliminación." });
+
+            var usuario = await _context.Usuarios.FindAsync(usuarioId);
+            if (usuario is null || string.IsNullOrEmpty(usuario.TokenSesionHash) ||
+                !SesionTokens.Coinciden(usuario.TokenSesionHash, SesionTokens.Hash(token)))
+                return Unauthorized(new { mensaje = "Tu sesión ya no es válida." });
+
+            if (usuario.SolicitudEliminacionUtc is null)
+            {
+                usuario.SolicitudEliminacionUtc = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+
+            return Accepted(new { mensaje = "Registramos tu solicitud. El equipo de MUEVE se contactará para confirmar la eliminación y atender obligaciones legales o reclamos pendientes." });
+        }
+
         private static string? ValidarRegistro(RegistroUsuarioRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Nombre) ||

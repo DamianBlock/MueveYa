@@ -20,6 +20,7 @@
         // Solo se completa para las cuentas creadas después de incorporar promociones.
         // Las cuentas históricas no reciben una fecha artificial de alta.
         public DateTime? FechaRegistroUtc { get; set; }
+        public DateTime? SolicitudEliminacionUtc { get; set; }
         public string? TokenSesionHash { get; set; }
         public DateTime? SesionIniciadaUtc { get; set; }
         public string? TokenSesion { get; set; }
