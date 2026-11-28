@@ -451,9 +451,21 @@
                         </Label.GestureRecognizers>
                     </Label>
 
+                    <Label Text="Pagos" FontSize="16" TextColor="Black">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="Pagos_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
                     <Label Text="Promos" FontSize="16" TextColor="Black">
                         <Label.GestureRecognizers>
                             <TapGestureRecognizer Tapped="Promos_Tapped"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <Label Text="Ayuda" FontSize="16" TextColor="Black">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="Ayuda_Tapped"/>
                         </Label.GestureRecognizers>
                     </Label>
 

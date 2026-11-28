@@ -356,16 +356,38 @@ namespace AppFletesMueve.Views
             panelMenu.IsVisible = false;
         }
 
-        private async void Viajes_Tapped(object? sender, TappedEventArgs e)
+        private void Viajes_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            await DisplayAlertAsync("MUEVE", "Sección de viajes en construcción.", "Aceptar");
+            IrAPestana("Viajes");
         }
 
-        private async void Promos_Tapped(object? sender, TappedEventArgs e)
+        private void Pagos_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            await DisplayAlertAsync("MUEVE", "Sección de promos en construcción.", "Aceptar");
+            IrAPestana("Pagos");
+        }
+
+        private void Promos_Tapped(object? sender, TappedEventArgs e)
+        {
+            CerrarMenu_Tapped(sender, e);
+            IrAPestana("Promos");
+        }
+
+        private void Ayuda_Tapped(object? sender, TappedEventArgs e)
+        {
+            CerrarMenu_Tapped(sender, e);
+            IrAPestana("Ayuda");
+        }
+
+        private void IrAPestana(string titulo)
+        {
+            if (Parent is NavigationPage navegacion && navegacion.Parent is TabbedPage pestanas)
+            {
+                var destino = pestanas.Children.FirstOrDefault(p => p.Title == titulo);
+                if (destino != null)
+                    pestanas.CurrentPage = destino;
+            }
         }
 
         private Task ActualizarDestinoAsync(Location destino, string etiqueta)

@@ -48,7 +48,7 @@ namespace AppFletesMueve.Views
             {
                 await DisplayAlertAsync(
                     "MUEVE",
-                    "Usuario registrado correctamente en el API.",
+                    "Tu cuenta se creó correctamente. Ya podés iniciar sesión.",
                     "Aceptar");
                 txtNombre.Text = "";
                 txtApellido.Text = "";
