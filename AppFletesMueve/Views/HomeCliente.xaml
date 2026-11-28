@@ -439,33 +439,21 @@
 
                 <VerticalStackLayout Spacing="25">
 
-                    <Label Text="Inicio" FontSize="16" TextColor="Black">
+                    <Label Text="Mi cuenta" FontSize="16" TextColor="Black">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="CerrarMenu_Tapped"/>
+                            <TapGestureRecognizer Tapped="MiCuenta_Tapped"/>
                         </Label.GestureRecognizers>
                     </Label>
 
-                    <Label Text="Viajes" FontSize="16" TextColor="Black">
+                    <Label Text="Política de privacidad" FontSize="16" TextColor="Black">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="Viajes_Tapped"/>
+                            <TapGestureRecognizer Tapped="Privacidad_Tapped"/>
                         </Label.GestureRecognizers>
                     </Label>
 
-                    <Label Text="Pagos" FontSize="16" TextColor="Black">
+                    <Label Text="Términos de uso" FontSize="16" TextColor="Black">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="Pagos_Tapped"/>
-                        </Label.GestureRecognizers>
-                    </Label>
-
-                    <Label Text="Promos" FontSize="16" TextColor="Black">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="Promos_Tapped"/>
-                        </Label.GestureRecognizers>
-                    </Label>
-
-                    <Label Text="Ayuda" FontSize="16" TextColor="Black">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="Ayuda_Tapped"/>
+                            <TapGestureRecognizer Tapped="Terminos_Tapped"/>
                         </Label.GestureRecognizers>
                     </Label>
 

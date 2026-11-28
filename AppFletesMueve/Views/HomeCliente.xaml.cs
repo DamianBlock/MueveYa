@@ -356,38 +356,29 @@ namespace AppFletesMueve.Views
             panelMenu.IsVisible = false;
         }
 
-        private void Viajes_Tapped(object? sender, TappedEventArgs e)
+        private async void MiCuenta_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            IrAPestana("Viajes");
+
+            var nombre = $"{Preferences.Get("Nombre", string.Empty)} {Preferences.Get("Apellido", string.Empty)}".Trim();
+            var email = Preferences.Get("Email", string.Empty);
+            var tipoUsuario = Preferences.Get("TipoUsuario", string.Empty);
+            await DisplayAlertAsync(
+                "Mi cuenta",
+                $"{(string.IsNullOrWhiteSpace(nombre) ? "Usuario" : nombre)}\n{email}\n{tipoUsuario}",
+                "Aceptar");
         }
 
-        private void Pagos_Tapped(object? sender, TappedEventArgs e)
+        private async void Privacidad_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            IrAPestana("Pagos");
+            await Navigation.PushAsync(new LegalPage(privacidad: true));
         }
 
-        private void Promos_Tapped(object? sender, TappedEventArgs e)
+        private async void Terminos_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            IrAPestana("Promos");
-        }
-
-        private void Ayuda_Tapped(object? sender, TappedEventArgs e)
-        {
-            CerrarMenu_Tapped(sender, e);
-            IrAPestana("Ayuda");
-        }
-
-        private void IrAPestana(string titulo)
-        {
-            if (Parent is NavigationPage navegacion && navegacion.Parent is TabbedPage pestanas)
-            {
-                var destino = pestanas.Children.FirstOrDefault(p => p.Title == titulo);
-                if (destino != null)
-                    pestanas.CurrentPage = destino;
-            }
+            await Navigation.PushAsync(new LegalPage(privacidad: false));
         }
 
         private Task ActualizarDestinoAsync(Location destino, string etiqueta)
