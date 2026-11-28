@@ -356,16 +356,29 @@ namespace AppFletesMueve.Views
             panelMenu.IsVisible = false;
         }
 
-        private async void Viajes_Tapped(object? sender, TappedEventArgs e)
+        private async void MiCuenta_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            await DisplayAlertAsync("MUEVE", "Sección de viajes en construcción.", "Aceptar");
+
+            var nombre = $"{Preferences.Get("Nombre", string.Empty)} {Preferences.Get("Apellido", string.Empty)}".Trim();
+            var email = Preferences.Get("Email", string.Empty);
+            var tipoUsuario = Preferences.Get("TipoUsuario", string.Empty);
+            await DisplayAlertAsync(
+                "Mi cuenta",
+                $"{(string.IsNullOrWhiteSpace(nombre) ? "Usuario" : nombre)}\n{email}\n{tipoUsuario}",
+                "Aceptar");
         }
 
-        private async void Promos_Tapped(object? sender, TappedEventArgs e)
+        private async void Privacidad_Tapped(object? sender, TappedEventArgs e)
         {
             CerrarMenu_Tapped(sender, e);
-            await DisplayAlertAsync("MUEVE", "Sección de promos en construcción.", "Aceptar");
+            await Navigation.PushAsync(new LegalPage(privacidad: true));
+        }
+
+        private async void Terminos_Tapped(object? sender, TappedEventArgs e)
+        {
+            CerrarMenu_Tapped(sender, e);
+            await Navigation.PushAsync(new LegalPage(privacidad: false));
         }
 
         private Task ActualizarDestinoAsync(Location destino, string etiqueta)

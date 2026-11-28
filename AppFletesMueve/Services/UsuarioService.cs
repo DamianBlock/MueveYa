@@ -165,9 +165,11 @@ namespace AppFletesMueve.Services
                     _apiUrl + "Usuario/recuperar-password",
                     new { Email = email ?? string.Empty });
 
-                return response.IsSuccessStatusCode
-                    ? (true, "Si existe una cuenta con ese correo, enviamos un código de recuperación.")
-                    : (false, "No se pudo solicitar el código. Intentá nuevamente más tarde.");
+                var contenido = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                    return (true, ObtenerMensaje(contenido, "Te enviamos un código de recuperación. Revisá tu correo."));
+
+                return (false, ObtenerMensaje(contenido, "No se pudo solicitar el código. Intentá nuevamente más tarde."));
             }
             catch (HttpRequestException)
             {
@@ -218,6 +220,20 @@ namespace AppFletesMueve.Services
             {
                 return (false, "El servidor tardó demasiado en responder. Intentá nuevamente.");
             }
+        }
+
+        private static string ObtenerMensaje(string contenido, string mensajePredeterminado)
+        {
+            try
+            {
+                using var json = JsonDocument.Parse(contenido);
+                if (json.RootElement.TryGetProperty("mensaje", out var mensaje) &&
+                    !string.IsNullOrWhiteSpace(mensaje.GetString()))
+                    return mensaje.GetString()!;
+            }
+            catch (JsonException) { }
+
+            return mensajePredeterminado;
         }
     }
 }

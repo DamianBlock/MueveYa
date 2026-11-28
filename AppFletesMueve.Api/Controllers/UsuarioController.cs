@@ -144,15 +144,13 @@ namespace AppFletesMueve.Api.Controllers
         [EnableRateLimiting("recuperacion-solicitud")]
         public async Task<IActionResult> SolicitarRecuperacion([FromBody] RecuperacionPasswordRequest request)
         {
-            // La respuesta es intencionalmente idéntica para no revelar qué correos tienen cuenta.
-            const string mensaje = "Si existe una cuenta con ese correo, enviamos un código de recuperación.";
             if (string.IsNullOrWhiteSpace(request.Email) || !new EmailAddressAttribute().IsValid(request.Email))
-                return Accepted(new { mensaje });
+                return BadRequest(new { mensaje = "Ingresá un correo electrónico válido." });
 
             var email = request.Email.Trim().ToLowerInvariant();
             var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
             if (usuario == null)
-                return Accepted(new { mensaje });
+                return NotFound(new { mensaje = "No hay una cuenta registrada con ese correo electrónico." });
 
             var codigo = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
             usuario.CodigoRecuperacionHash = SesionTokens.Hash(codigo);
@@ -162,9 +160,15 @@ namespace AppFletesMueve.Api.Controllers
 
             var enviado = await _emailSender.EnviarCodigoRecuperacionAsync(usuario.Email, codigo);
             if (!enviado)
+            {
                 _logger.LogWarning("No se pudo entregar el código de recuperación para una cuenta.");
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    mensaje = "No se pudo enviar el código en este momento. Intentá nuevamente más tarde."
+                });
+            }
 
-            return Accepted(new { mensaje });
+            return Accepted(new { mensaje = "Te enviamos un código de recuperación. Revisá tu correo." });
         }
 
         [HttpPost("restablecer-password")]
