@@ -3,6 +3,8 @@ using AppFletesMueve.Api.Models;
 using AppFletesMueve.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +33,25 @@ builder.Services.AddSignalR()
 
 builder.Services.AddScoped<ICalculadoraTarifas, CalculadoraTarifas>();      
 builder.Services.AddScoped<IPromocionesService, PromocionesService>();
+builder.Services.AddHttpClient("GooglePlaces", client =>
+{
+    client.BaseAddress = new Uri("https://places.googleapis.com/v1/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 8, Window = TimeSpan.FromMinutes(10), QueueLimit = 0
+        }));
+    options.AddPolicy("registro", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 4, Window = TimeSpan.FromHours(1), QueueLimit = 0
+        }));
+});
 
 var app = builder.Build();
 
@@ -66,6 +87,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<AppFletesMueve.Api.Middleware.SesionMiddleware>();
 app.MapControllers();
 app.MapHub<AppFletesMueve.Api.Hubs.SolicitudesHub>("/hubs/solicitudes");

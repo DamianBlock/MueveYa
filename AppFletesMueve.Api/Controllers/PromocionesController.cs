@@ -1,6 +1,7 @@
 using AppFletesMueve.Api.Data;
 using AppFletesMueve.Api.Dtos;
 using AppFletesMueve.Api.Services;
+using AppFletesMueve.Api.Middleware;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AppFletesMueve.Api.Controllers;
@@ -21,7 +22,7 @@ public class PromocionesController : ControllerBase
     [HttpGet("primer-viaje/{clienteId:int}")]
     public async Task<ActionResult<PromocionPrimerViajeDto>> ObtenerPrimerViaje(int clienteId)
     {
-        if (!int.TryParse(Request.Headers["X-Usuario-Id"].ToString(), out var usuarioActual) || usuarioActual != clienteId)
+        if (!SesionActual.EsUsuarioActual(HttpContext, clienteId))
             return Forbid();
 
         var cliente = await _context.Usuarios.FindAsync(clienteId);

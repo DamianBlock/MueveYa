@@ -26,10 +26,9 @@ namespace AppFletesMueve.Api.Middleware
         {
             _next = next;
 
-            // false (por defecto): modo de transición, las llamadas SIN credenciales se aceptan
-            //                      (versiones viejas de la app). Si traen credenciales, se validan.
-            // true: toda llamada protegida necesita credenciales válidas.
-            _obligatoria = configuracion.GetValue<bool>("Sesion:Obligatoria");
+            // En producción no se admite el modo de transición: todo endpoint protegido
+            // requiere una sesión vigente. Development puede configurarlo explícitamente.
+            _obligatoria = configuracion.GetValue("Sesion:Obligatoria", true);
         }
 
         public async Task InvokeAsync(HttpContext context, MueveDbContext db)
@@ -73,6 +72,8 @@ namespace AppFletesMueve.Api.Middleware
                 await RechazarAsync(context);
                 return;
             }
+
+            context.Items[SesionActual.UsuarioIdItem] = usuarioId;
 
             await _next(context);
         }

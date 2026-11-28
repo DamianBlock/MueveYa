@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using AppFletesMueve.Api.Middleware;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -34,9 +35,14 @@ namespace AppFletesMueve.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<SolicitudFleteDto>> Crear(CrearSolicitudFleteDto dto)
         {
+            if (!SesionActual.EsUsuarioActual(HttpContext, dto.ClienteId))
+                return Forbid();
+
             var cliente = await _context.Usuarios.FindAsync(dto.ClienteId);
             if (cliente is null)
                 return NotFound(new { mensaje = "El cliente no existe" });
+            if (!string.Equals(cliente.TipoUsuario, "CLIENTE", StringComparison.Ordinal))
+                return Forbid();
 
             // Un cliente solo puede tener un viaje activo a la vez
             var yaTieneViaje = await _context.SolicitudesFlete.AnyAsync(s =>
@@ -127,6 +133,8 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<SolicitudFleteDto>> ObtenerPorId(int id)
         {
+            if (!await PuedeAccederSolicitudAsync(id))
+                return Forbid();
             var dto = await ObtenerDto(id);
             return dto is null ? NotFound() : Ok(dto);
         }
@@ -135,6 +143,8 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("pendientes")]
         public async Task<ActionResult<IEnumerable<SolicitudFleteDto>>> ListarPendientes([FromQuery] TipoVehiculo? tipo)
         {
+            if (!await EsConductorActualAsync())
+                return Forbid();
             var query = _context.SolicitudesFlete
                 .Where(s => s.Estado == EstadoSolicitud.Pendiente);
 
@@ -208,6 +218,8 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("cliente/{clienteId:int}/activa")]
         public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorCliente(int clienteId)
         {
+            if (!EsUsuarioActual(clienteId))
+                return Forbid();
             var id = await _context.SolicitudesFlete
                 .Where(s => s.ClienteId == clienteId &&
                     (s.Estado == EstadoSolicitud.Pendiente || EstadosViaje.Activos.Contains(s.Estado)))
@@ -234,6 +246,8 @@ namespace AppFletesMueve.Api.Controllers
             var conductor = await _context.Conductores.FindAsync(dto.ConductorId);
             if (conductor is null || !conductor.Disponible)
                 return Conflict(new { mensaje = "Iniciá el servicio para poder aceptar viajes" });
+            if (!EsUsuarioActual(conductor.UsuarioId))
+                return Forbid();
 
             var vehiculo = await _context.Vehiculos
                 .FirstOrDefaultAsync(v => v.VehiculoId == dto.VehiculoId
@@ -305,6 +319,8 @@ namespace AppFletesMueve.Api.Controllers
             var solicitud = await _context.SolicitudesFlete.FindAsync(id);
             if (solicitud is null)
                 return NotFound();
+            if (!await PuedeCancelarAsync(solicitud, dto.CanceladoPor))
+                return Forbid();
 
             if (solicitud.Estado is EstadoSolicitud.Completada or EstadoSolicitud.Cancelada)
                 return Conflict(new { mensaje = "La solicitud ya está cerrada" });
@@ -348,6 +364,10 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("conductor/{conductorId:int}/activa")]
         public async Task<ActionResult<SolicitudFleteDto>> ObtenerActivaPorConductor(int conductorId)
         {
+            var conductor = await _context.Conductores.AsNoTracking().FirstOrDefaultAsync(c => c.ConductorId == conductorId);
+            if (conductor is null) return NotFound();
+            if (!EsUsuarioActual(conductor.UsuarioId)) return Forbid();
+
             var id = await _context.SolicitudesFlete
                 .Where(s => s.ConductorId == conductorId && EstadosViaje.Activos.Contains(s.Estado))
                 .OrderByDescending(s => s.FechaSolicitud)
@@ -367,6 +387,8 @@ namespace AppFletesMueve.Api.Controllers
             var solicitud = await _context.SolicitudesFlete.FindAsync(id);
             if (solicitud is null)
                 return NotFound();
+            if (!await EsConductorActualAsync(solicitud.ConductorId))
+                return Forbid();
 
             if (solicitud.Estado != EstadoSolicitud.EnDestino)
                 return Conflict(new { mensaje = "Todavía no llegaste al destino" });
@@ -400,6 +422,8 @@ namespace AppFletesMueve.Api.Controllers
             var solicitud = await _context.SolicitudesFlete.FindAsync(id);
             if (solicitud is null)
                 return NotFound();
+            if (!await EsConductorActualAsync(solicitud.ConductorId))
+                return Forbid();
 
             if (solicitud.Estado != desde)
                 return Conflict(new { mensaje = "El viaje no está en la etapa esperada. Actualizá la pantalla." });
@@ -479,7 +503,26 @@ namespace AppFletesMueve.Api.Controllers
             };
         }
 
-        private bool EsUsuarioActual(int usuarioId) =>
-            int.TryParse(Request.Headers["X-Usuario-Id"].ToString(), out var actual) && actual == usuarioId;
+        private bool EsUsuarioActual(int usuarioId) => SesionActual.EsUsuarioActual(HttpContext, usuarioId);
+
+        private async Task<bool> EsConductorActualAsync(int? conductorId = null)
+        {
+            if (!SesionActual.TryObtenerUsuarioId(HttpContext, out var usuarioId)) return false;
+            return await _context.Conductores.AsNoTracking().AnyAsync(c =>
+                c.UsuarioId == usuarioId && (!conductorId.HasValue || c.ConductorId == conductorId.Value));
+        }
+
+        private async Task<bool> PuedeAccederSolicitudAsync(int solicitudId)
+        {
+            if (!SesionActual.TryObtenerUsuarioId(HttpContext, out var usuarioId)) return false;
+            return await _context.SolicitudesFlete.AsNoTracking().AnyAsync(s =>
+                s.SolicitudFleteId == solicitudId &&
+                (s.ClienteId == usuarioId || (s.Conductor != null && s.Conductor.UsuarioId == usuarioId)));
+        }
+
+        private async Task<bool> PuedeCancelarAsync(SolicitudFlete solicitud, QuienCancela quien) =>
+            quien == QuienCancela.Cliente
+                ? EsUsuarioActual(solicitud.ClienteId)
+                : await EsConductorActualAsync(solicitud.ConductorId);
     }
 }

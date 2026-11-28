@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using AppFletesMueve.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -19,6 +20,7 @@ namespace AppFletesMueve.Api.Controllers
         }
 
         [HttpPost]
+        [EnableRateLimiting("registro")]
         public async Task<IActionResult> Registrar([FromBody] RegistroUsuarioRequest request)
         {
             var error = ValidarRegistro(request);
@@ -58,6 +60,7 @@ namespace AppFletesMueve.Api.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
             var usuario = await _context.Usuarios
