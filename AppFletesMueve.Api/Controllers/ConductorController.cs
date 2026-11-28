@@ -3,6 +3,7 @@ using AppFletesMueve.Api.Dtos;
 using AppFletesMueve.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AppFletesMueve.Api.Middleware;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -20,6 +21,9 @@ namespace AppFletesMueve.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<ConductorDto>> Crear(CrearConductorDto dto)
         {
+            if (!SesionActual.EsUsuarioActual(HttpContext, dto.UsuarioId))
+                return Forbid();
+
             var usuario = await _context.Usuarios.FindAsync(dto.UsuarioId);
             if (usuario is null)
                 return NotFound(new { mensaje = "El usuario no existe" });
@@ -48,6 +52,9 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("por-usuario/{usuarioId:int}")]
         public async Task<ActionResult<ConductorDto>> ObtenerPorUsuario(int usuarioId)
         {
+            if (!SesionActual.EsUsuarioActual(HttpContext, usuarioId))
+                return Forbid();
+
             var conductor = await _context.Conductores
                 .AsNoTracking()
                 .Include(c => c.Usuario)
@@ -68,6 +75,8 @@ namespace AppFletesMueve.Api.Controllers
 
             if (conductor is null)
                 return NotFound();
+            if (!SesionActual.EsUsuarioActual(HttpContext, conductor.UsuarioId))
+                return Forbid();
 
             conductor.Disponible = dto.Disponible;
             if (dto.Latitud.HasValue) conductor.Latitud = dto.Latitud.Value;
@@ -86,6 +95,8 @@ namespace AppFletesMueve.Api.Controllers
 
             if (conductor is null)
                 return NotFound();
+            if (!SesionActual.EsUsuarioActual(HttpContext, conductor.UsuarioId))
+                return Forbid();
 
             var elegido = conductor.Vehiculos.FirstOrDefault(v => v.VehiculoId == dto.VehiculoId && v.Activo);
             if (elegido is null)
@@ -118,6 +129,8 @@ namespace AppFletesMueve.Api.Controllers
 
             if (conductor is null)
                 return NotFound();
+            if (!SesionActual.EsUsuarioActual(HttpContext, conductor.UsuarioId))
+                return Forbid();
 
             var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
                 s.ConductorId == id && EstadosViaje.Activos.Contains(s.Estado));

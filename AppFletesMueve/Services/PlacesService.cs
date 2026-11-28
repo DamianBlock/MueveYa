@@ -1,107 +1,60 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
-namespace AppFletesMueve.Services
+namespace AppFletesMueve.Services;
+
+public class PlaceSuggestion
 {
-    public class PlaceSuggestion
+    public string Description { get; set; } = string.Empty;
+    public string PlaceId { get; set; } = string.Empty;
+}
+
+public class PlaceDetalle
+{
+    public double Latitud { get; set; }
+    public double Longitud { get; set; }
+}
+
+public class PlacesService
+{
+    private readonly HttpClient _httpClient = ApiHttp.CrearCliente();
+
+#if DEBUG
+    private const string ApiUrl = "http://10.0.2.2:5051/api/Places/";
+#else
+    private const string ApiUrl = "https://mueveya.onrender.com/api/Places/";
+#endif
+
+    public async Task<List<PlaceSuggestion>> BuscarSugerenciasAsync(string texto)
     {
-        public string Description { get; set; } = string.Empty;
-        public string PlaceId { get; set; } = string.Empty;
+        if (string.IsNullOrWhiteSpace(texto) || texto.Trim().Length < 3) return new();
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<AutocompleteResponse>(
+                ApiUrl + "autocomplete?input=" + Uri.EscapeDataString(texto.Trim()));
+            return response?.Status == "OK" && response.Predictions is not null
+                ? response.Predictions.Select(p => new PlaceSuggestion { Description = p.Description, PlaceId = p.PlaceId }).ToList()
+                : new();
+        }
+        catch { return new(); }
     }
 
-    public class PlaceDetalle
+    public async Task<PlaceDetalle?> ObtenerDetalleAsync(string placeId)
     {
-        public double Latitud { get; set; }
-        public double Longitud { get; set; }
+        if (string.IsNullOrWhiteSpace(placeId)) return null;
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<DetailsResponse>(ApiUrl + "details/" + Uri.EscapeDataString(placeId));
+            var location = response?.Result?.Geometry?.Location;
+            return location is null ? null : new PlaceDetalle { Latitud = location.Lat, Longitud = location.Lng };
+        }
+        catch { return null; }
     }
 
-    public class PlacesService
-    {
-        private readonly HttpClient _httpClient = new();
-
-        // Key SEPARADA de la del Maps SDK: esta no puede restringirse por app Android.
-        private const string PlacesApiKey = "AIzaSyAuxGynEG7GY0Kdtp9VA6M8B0kQLuI2JT4";
-
-        public async Task<List<PlaceSuggestion>> BuscarSugerenciasAsync(string texto)
-        {
-            if (string.IsNullOrWhiteSpace(texto) || texto.Trim().Length < 3)
-                return new List<PlaceSuggestion>();
-
-            try
-            {
-                var url = "https://maps.googleapis.com/maps/api/place/autocomplete/json" +
-                          $"?input={Uri.EscapeDataString(texto)}" +
-                          "&language=es" +
-                          "&components=country:ar" +
-                          $"&key={PlacesApiKey}";
-
-                var response = await _httpClient.GetFromJsonAsync<AutocompleteResponse>(url);
-
-                if (response?.Status != "OK" || response.Predictions is null)
-                    return new List<PlaceSuggestion>();
-
-                return response.Predictions
-                    .Select(p => new PlaceSuggestion { Description = p.Description, PlaceId = p.PlaceId })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error en autocomplete: {ex}");
-                return new List<PlaceSuggestion>();
-            }
-        }
-
-        public async Task<PlaceDetalle?> ObtenerDetalleAsync(string placeId)
-        {
-            try
-            {
-                var url = "https://maps.googleapis.com/maps/api/place/details/json" +
-                          $"?place_id={placeId}" +
-                          "&fields=geometry" +
-                          $"&key={PlacesApiKey}";
-
-                var response = await _httpClient.GetFromJsonAsync<DetailsResponse>(url);
-                var loc = response?.Result?.Geometry?.Location;
-                return loc is null ? null : new PlaceDetalle { Latitud = loc.Lat, Longitud = loc.Lng };
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error en place details: {ex}");
-                return null;
-            }
-        }
-
-        private class AutocompleteResponse
-        {
-            [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
-            [JsonPropertyName("predictions")] public List<Prediction>? Predictions { get; set; }
-        }
-
-        private class Prediction
-        {
-            [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
-            [JsonPropertyName("place_id")] public string PlaceId { get; set; } = string.Empty;
-        }
-
-        private class DetailsResponse
-        {
-            [JsonPropertyName("result")] public PlaceResult? Result { get; set; }
-        }
-
-        private class PlaceResult
-        {
-            [JsonPropertyName("geometry")] public PlaceGeometry? Geometry { get; set; }
-        }
-
-        private class PlaceGeometry
-        {
-            [JsonPropertyName("location")] public PlaceLocation? Location { get; set; }
-        }
-
-        private class PlaceLocation
-        {
-            [JsonPropertyName("lat")] public double Lat { get; set; }
-            [JsonPropertyName("lng")] public double Lng { get; set; }
-        }
-    }
+    private sealed class AutocompleteResponse { [JsonPropertyName("status")] public string Status { get; set; } = string.Empty; [JsonPropertyName("predictions")] public List<Prediction>? Predictions { get; set; } }
+    private sealed class Prediction { [JsonPropertyName("description")] public string Description { get; set; } = string.Empty; [JsonPropertyName("place_id")] public string PlaceId { get; set; } = string.Empty; }
+    private sealed class DetailsResponse { [JsonPropertyName("result")] public PlaceResult? Result { get; set; } }
+    private sealed class PlaceResult { [JsonPropertyName("geometry")] public PlaceGeometry? Geometry { get; set; } }
+    private sealed class PlaceGeometry { [JsonPropertyName("location")] public PlaceLocation? Location { get; set; } }
+    private sealed class PlaceLocation { [JsonPropertyName("lat")] public double Lat { get; set; } [JsonPropertyName("lng")] public double Lng { get; set; } }
 }

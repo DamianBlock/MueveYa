@@ -103,6 +103,11 @@ public partial class LoginPage : ContentPage
         await Navigation.PushAsync(new RegistroPage(_usuarioService));
     }
 
+    private async void RecuperarPassword_Clicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new RecuperarPasswordPage(_usuarioService));
+    }
+
     private void MostrarPassword_Clicked(object? sender, EventArgs e)
     {
         txtPassword.IsPassword = !txtPassword.IsPassword;

@@ -276,6 +276,12 @@ namespace AppFletesMueve.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CodigoRecuperacionHash")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CodigoRecuperacionVenceUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Dni")
                         .IsRequired()
                         .HasColumnType("text");
@@ -286,6 +292,9 @@ namespace AppFletesMueve.Api.Migrations
 
                     b.Property<DateTime?>("FechaRegistroUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IntentosCodigoRecuperacion")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Nombre")
                         .IsRequired()

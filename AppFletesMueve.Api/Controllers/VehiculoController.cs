@@ -3,6 +3,7 @@ using AppFletesMueve.Api.Dtos;
 using AppFletesMueve.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AppFletesMueve.Api.Middleware;
 
 namespace AppFletesMueve.Api.Controllers
 {
@@ -20,10 +21,13 @@ namespace AppFletesMueve.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<VehiculoDto>> Crear(CrearVehiculoDto dto)
         {
-            var conductorExiste = await _context.Conductores
-                .AnyAsync(c => c.ConductorId == dto.ConductorId);
-            if (!conductorExiste)
+            var conductor = await _context.Conductores
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.ConductorId == dto.ConductorId);
+            if (conductor is null)
                 return NotFound(new { mensaje = "El conductor no existe" });
+            if (!SesionActual.EsUsuarioActual(HttpContext, conductor.UsuarioId))
+                return Forbid();
 
             var patente = dto.Patente.Replace(" ", "").ToUpperInvariant();
 
@@ -80,6 +84,11 @@ namespace AppFletesMueve.Api.Controllers
         [HttpGet("conductor/{conductorId:int}")]
         public async Task<ActionResult<IEnumerable<VehiculoDto>>> ListarPorConductor(int conductorId)
         {
+            var conductor = await _context.Conductores.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.ConductorId == conductorId);
+            if (conductor is null) return NotFound();
+            if (!SesionActual.EsUsuarioActual(HttpContext, conductor.UsuarioId)) return Forbid();
+
             var vehiculos = await _context.Vehiculos
                 .AsNoTracking()
                 .Where(v => v.ConductorId == conductorId && v.Activo)
@@ -118,6 +127,8 @@ namespace AppFletesMueve.Api.Controllers
 
             if (vehiculo is null)
                 return NotFound();
+            if (!SesionActual.EsUsuarioActual(HttpContext, vehiculo.Conductor.UsuarioId))
+                return Forbid();
 
             var tieneViajeActivo = await _context.SolicitudesFlete.AnyAsync(s =>
                 s.VehiculoId == id && EstadosViaje.Activos.Contains(s.Estado));

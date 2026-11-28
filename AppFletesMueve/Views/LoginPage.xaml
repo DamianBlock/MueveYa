@@ -65,6 +65,14 @@
                                 Clicked="Ingresar_Clicked" />
 
                             <Button
+                                Text="¿OLVIDASTE TU CONTRASEÑA?"
+                                BackgroundColor="Transparent"
+                                TextColor="#E65100"
+                                FontAttributes="Bold"
+                                Padding="0,4"
+                                Clicked="RecuperarPassword_Clicked" />
+
+                            <Button
                                 Text="CREAR CUENTA"
                                 BackgroundColor="White"
                                 BorderColor="#E65100"

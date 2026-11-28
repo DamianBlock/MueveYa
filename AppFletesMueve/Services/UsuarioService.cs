@@ -156,5 +156,68 @@ namespace AppFletesMueve.Services
             });
             return new ResultadoLogin(usuario, false);
         }
+
+        public async Task<(bool Success, string Message)> SolicitarRecuperacionPasswordAsync(string? email)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(
+                    _apiUrl + "Usuario/recuperar-password",
+                    new { Email = email ?? string.Empty });
+
+                return response.IsSuccessStatusCode
+                    ? (true, "Si existe una cuenta con ese correo, enviamos un código de recuperación.")
+                    : (false, "No se pudo solicitar el código. Intentá nuevamente más tarde.");
+            }
+            catch (HttpRequestException)
+            {
+                return (false, "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.");
+            }
+            catch (TaskCanceledException)
+            {
+                return (false, "El servidor tardó demasiado en responder. Intentá nuevamente.");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> RestablecerPasswordAsync(
+            string? email,
+            string? codigo,
+            string? passwordNueva)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(
+                    _apiUrl + "Usuario/restablecer-password",
+                    new
+                    {
+                        Email = email ?? string.Empty,
+                        Codigo = codigo ?? string.Empty,
+                        PasswordNueva = passwordNueva ?? string.Empty
+                    });
+
+                if (response.IsSuccessStatusCode)
+                    return (true, "Tu contraseña se actualizó. Ingresá con la nueva contraseña.");
+
+                var contenido = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    using var json = JsonDocument.Parse(contenido);
+                    if (json.RootElement.TryGetProperty("mensaje", out var mensaje) &&
+                        !string.IsNullOrWhiteSpace(mensaje.GetString()))
+                        return (false, mensaje.GetString()!);
+                }
+                catch (JsonException) { }
+
+                return (false, "No se pudo restablecer la contraseña. Solicitá un código nuevo e intentá otra vez.");
+            }
+            catch (HttpRequestException)
+            {
+                return (false, "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.");
+            }
+            catch (TaskCanceledException)
+            {
+                return (false, "El servidor tardó demasiado en responder. Intentá nuevamente.");
+            }
+        }
     }
 }

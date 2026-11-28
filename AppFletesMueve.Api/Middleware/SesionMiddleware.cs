@@ -13,6 +13,9 @@ namespace AppFletesMueve.Api.Middleware
 
         public static string Hash(string token) =>
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+
+        public static bool Coinciden(string esperado, string recibido) =>
+            CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(esperado), Encoding.UTF8.GetBytes(recibido));
     }
 
     // Solo vale la última sesión iniciada por cada usuario: al entrar desde otro dispositivo,
@@ -26,10 +29,9 @@ namespace AppFletesMueve.Api.Middleware
         {
             _next = next;
 
-            // false (por defecto): modo de transición, las llamadas SIN credenciales se aceptan
-            //                      (versiones viejas de la app). Si traen credenciales, se validan.
-            // true: toda llamada protegida necesita credenciales válidas.
-            _obligatoria = configuracion.GetValue<bool>("Sesion:Obligatoria");
+            // En producción no se admite el modo de transición: todo endpoint protegido
+            // requiere una sesión vigente. Development puede configurarlo explícitamente.
+            _obligatoria = configuracion.GetValue("Sesion:Obligatoria", true);
         }
 
         public async Task InvokeAsync(HttpContext context, MueveDbContext db)
@@ -38,7 +40,9 @@ namespace AppFletesMueve.Api.Middleware
 
             var protegida = ruta.StartsWith("/api/") || ruta.StartsWith("/hubs/");
             var publica = ruta == "/api/usuario/login"
-                          || (ruta == "/api/usuario" && HttpMethods.IsPost(context.Request.Method));
+                          || (ruta == "/api/usuario" && HttpMethods.IsPost(context.Request.Method))
+                          || ruta == "/api/usuario/recuperar-password"
+                          || ruta == "/api/usuario/restablecer-password";
 
             if (!protegida || publica || HttpMethods.IsOptions(context.Request.Method))
             {
@@ -68,17 +72,16 @@ namespace AppFletesMueve.Api.Middleware
                 .Select(u => u.TokenSesionHash)
                 .FirstOrDefaultAsync();
 
-            if (string.IsNullOrEmpty(hashGuardado) || !HashIguales(hashGuardado, SesionTokens.Hash(token)))
+            if (string.IsNullOrEmpty(hashGuardado) || !SesionTokens.Coinciden(hashGuardado, SesionTokens.Hash(token)))
             {
                 await RechazarAsync(context);
                 return;
             }
 
+            context.Items[SesionActual.UsuarioIdItem] = usuarioId;
+
             await _next(context);
         }
-
-        private static bool HashIguales(string a, string b) =>
-            CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(a), Encoding.UTF8.GetBytes(b));
 
         private static Task RechazarAsync(HttpContext context)
         {
